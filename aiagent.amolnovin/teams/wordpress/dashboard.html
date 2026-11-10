@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تیم نخبگان وردپرس - 5 ایجنت هوشمند</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap');
+* { font-family: 'Vazirmatn', Tahoma, sans-serif; box-sizing: border-box; margin:0; padding:0; }
+body { background:#0f0f12; color:#fff; min-height:100vh; padding:24px; }
+.header { text-align:center; margin-bottom:32px; }
+.header h1 { font-size:32px; font-weight:900; background: linear-gradient(90deg,#60a5fa,#a78bfa,#f472b6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; }
+.header p { color:#9ca3af; font-size:15px; }
+.status { display:inline-flex; align-items:center; gap:8px; background:#1a1a20; border:1px solid #2a2a35; padding:6px 14px; border-radius:999px; font-size:13px; margin-top:12px; }
+.dot { width:8px; height:8px; background:#22c55e; border-radius:50%; box-shadow:0 0 10px #22c55e; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; max-width:1300px; margin:0 auto 36px; }
+.card { background:linear-gradient(145deg,#1a1a22,#14141a); border:1px solid #2a2a35; border-radius:20px; padding:20px; position:relative; overflow:hidden; transition:.3s; cursor:pointer; }
+.card:hover { transform:translateY(-4px); border-color:#3a3a4a; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+.card.active { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent), 0 10px 40px rgba(0,0,0,.5); }
+.card::before { content:''; position:absolute; top:0; right:0; width:100%; height:3px; background:var(--accent); }
+.top { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.avatar { width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; background:#23232f; border:1px solid #2e2e3e; }
+.info h3 { font-size:18px; font-weight:800; margin-bottom:2px; }
+.info span { font-size:12px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,.08); color:#a1a1b5; }
+.role { color:var(--accent); font-size:13px; font-weight:700; margin-bottom:10px; display:block; }
+.skills { list-style:none; display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.skills li { font-size:11px; background:#23232f; border:1px solid #2a2a35; padding:4px 9px; border-radius:999px; color:#c2c2d1; }
+.desc { font-size:13px; color:#9ca3af; line-height:1.7; margin-bottom:14px; min-height:42px; }
+.actions { display:flex; gap:8px; }
+.btn { flex:1; padding:10px; border-radius:10px; border:none; font-weight:700; font-size:13px; cursor:pointer; transition:.2s; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { filter:brightness(1.15); }
+.btn-ghost { background:#23232f; color:#d1d1dd; border:1px solid #2a2a35; }
+.console { max-width:1300px; margin:0 auto; background:#14141a; border:1px solid #2a2a35; border-radius:20px; overflow:hidden; }
+.console-header { padding:16px 20px; border-bottom:1px solid #2a2a35; display:flex; justify-content:space-between; align-items:center; }
+.console-header h4 { font-size:15px; }
+.chat { height:380px; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:14px; background:#0f0f12; }
+.msg { max-width:85%; padding:12px 16px; border-radius:16px; font-size:13.5px; line-height:1.8; }
+.msg-user { align-self:flex-start; background:#2563eb; color:#fff; border-bottom-right-radius:4px; }
+.msg-agent { align-self:flex-end; background:#1e1e28; border:1px solid #2a2a35; color:#e5e5ef; border-bottom-left-radius:4px; }
+.msg-agent b { color:var(--accent); }
+.input-area { display:flex; gap:10px; padding:14px; border-top:1px solid #2a2a35; background:#14141a; }
+.input-area input { flex:1; background:#0f0f12; border:1px solid #2a2a35; border-radius:12px; padding:12px 16px; color:#fff; outline:none; font-size:14px; }
+.input-area input:focus { border-color:#3b82f6; }
+.input-area button { background:#fff; color:#000; border:none; padding:0 22px; border-radius:12px; font-weight:800; cursor:pointer; }
+.tag { font-family:monospace; background:#000; padding:2px 6px; border-radius:4px; font-size:11px; border:1px solid #333; }
+.howto { max-width:1300px; margin:28px auto 0; background:linear-gradient(135deg,#1e1b4b,#312e81); border:1px solid #4338ca; border-radius:16px; padding:18px 20px; }
+.howto h4 { margin-bottom:10px; font-size:14px; }
+.howto ul { list-style:none; display:flex; flex-wrap:wrap; gap:8px; }
+.howto li { background:rgba(255,255,255,.1); padding:6px 12px; border-radius:999px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>تیم ۵ نفره نخبگان وردپرس شما فعال شد 🚀</h1>
+  <p>هر ایجنت یک متخصص ارشد با ۱۵ سال تجربه است - همین الان دستور بده</p>
+  <div class="status"><span class="dot"></span> 5 ایجنت آنلاین و آماده به کار - Dreieich, DE</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="console">
+  <div class="console-header">
+    <h4 id="consoleTitle">یک ایجنت را انتخاب کن تا گفتگو شروع شود</h4>
+    <span style="font-size:12px; color:#6b7280;">همه گفتگوها در همین چت ذخیره می‌شود</span>
+  </div>
+  <div class="chat" id="chat">
+    <div class="msg msg-agent">سلام! من مدیر تیم هستم. 👋<br><br>برای کار با هر متخصص، کافیه توی همین چت بنویسی:<br><br>
+      <span class="tag">@codex</span> برای ساخت افزونه<br>
+      <span class="tag">@themos</span> برای ساخت قالب<br>
+      <span class="tag">@wooger</span> برای ووکامرس<br>
+      <span class="tag">@securx</span> برای امنیت و سرعت<br>
+      <span class="tag">@elementora</span> برای المنتور و فرانت‌اند<br><br>
+      مثلا بنویس: <b>@codex یک افزونه عضویت ویژه با پنل کاربری بساز</b>
+    </div>
+  </div>
+  <div class="input-area">
+    <input id="input" placeholder="پیام خود را بنویس... مثلا: @codex یک افزونه رزرو بساز" onkeydown="if(event.key==='Enter') send()">
+    <button onclick="send()">ارسال</button>
+  </div>
+</div>
+
+<div class="howto">
+  <h4>💡 چطور از تیم استفاده کنی؟</h4>
+  <ul>
+    <li>🔹 @codex افزونه رزرو نوبت بساز</li>
+    <li>🔹 @themos قالب املاک با FSE بساز</li>
+    <li>🔹 @wooger درگاه زیبال + قسطی بساز</li>
+    <li>🔹 @securx کد من رو امن کن</li>
+    <li>🔹 @elementora ویجت پرایسینگ مدرن بساز</li>
+    <li>🔹 @همه یک پروژه کامل فروشگاهی بسازید</li>
+  </ul>
+</div>
+
+<script>
+const agents = [
+  { id:'codex', name:'کدکس', role:'معمار ارشد افزونه', emoji:'🧩', accent:'#3b82f6', tag:'@codex', desc:'متخصص ساخت افزونه‌های حرفه‌ای، OOP، REST API، CPT و استانداردهای وردپرس.org', skills:['Plugin Boilerplate','CPT & Taxonomy','REST API','WP-CLI','Security'] },
+  { id:'themos', name:'تیموس', role:'استاد قالب و FSE', emoji:'🎨', accent:'#ef4444', tag:'@themos', desc:'طراح قالب‌های فوق سریع، theme.json، Full Site Editing، Tailwind و تبدیل Figma به وردپرس', skills:['FSE & theme.json','Tailwind CSS','Gutenberg Blocks','Figma to WP','SEO & RTL'] },
+  { id:'wooger', name:'ووگر', role:'متخصص ووکامرس', emoji:'🛒', accent:'#8b5cf6', tag:'@wooger', desc:'ساخت درگاه پرداخت ایرانی، اشتراک، چندفروشندگی، بهینه‌سازی چک‌اوت و اتصال به حسابداری', skills:['Payment Gateway','Subscriptions','Dokan','Checkout Optimize','HPOS'] },
+  { id:'securx', name:'سکیورکس', role:'نگهبان امنیت و سرعت', emoji:'🛡️', accent:'#22c55e', tag:'@securx', desc:'هکر کلاه سفید، بهینه‌سازی Core Web Vitals، کش Redis، هاردنینگ و آنالیز امنیتی کد', skills:['XSS/CSRF/SQLi Fix','Redis Cache','PageSpeed 100','Hardening','Query Monitor'] },
+  { id:'elementora', name:'المنتورا', role:'جادوگر فرانت‌اند', emoji:'⚡', accent:'#f97316', tag:'@elementora', desc:'ساخت ویجت المنتور، بلوک گوتنبرگ با React، UI مدرن، انیمیشن و تجربه کاربری فارسی', skills:['Elementor Widget','Gutenberg React','Tailwind','Alpine.js','RTL UI/UX'] },
+];
+let active = null;
+const grid = document.getElementById('grid');
+const chat = document.getElementById('chat');
+const consoleTitle = document.getElementById('consoleTitle');
+
+function render(){
+  grid.innerHTML = agents.map(a=>`
+    <div class="card ${active===a.id?'active':''}" style="--accent:${a.accent}" onclick="selectAgent('${a.id}')">
+      <div class="top">
+        <div class="avatar">${a.emoji}</div>
+        <div class="info"><h3>${a.name}</h3><span>${a.tag}</span></div>
+      </div>
+      <span class="role">${a.role}</span>
+      <p class="desc">${a.desc}</p>
+      <ul class="skills">${a.skills.map(s=>`<li>${s}</li>`).join('')}</ul>
+      <div class="actions">
+        <button class="btn btn-primary">شروع گفتگو با ${a.name}</button>
+        <button class="btn btn-ghost">${a.tag}</button>
+      </div>
+    </div>
+  `).join('');
+}
+function selectAgent(id){
+  active = id;
+  const a = agents.find(x=>x.id===id);
+  consoleTitle.innerHTML = `${a.emoji} در حال گفتگو با <b style="color:${a.accent}">${a.name}</b> - ${a.role} <span class="tag">${a.tag}</span>`;
+  render();
+  addMsg(`سلام! من <b>${a.name}</b> هستم، ${a.role}. آماده‌ام تا پروژه‌ات رو بسازم. چی می‌خوای برات بسازم؟`, 'agent', a.accent);
+  document.getElementById('input').placeholder = `${a.tag} ... دستور خود را بنویس مثلا: یک افزونه بساز که...`;
+  document.getElementById('input').focus();
+}
+function addMsg(text, type, accent){
+  const div = document.createElement('div');
+  div.className = `msg msg-${type}`;
+  if(accent) div.style.setProperty('--accent', accent);
+  div.innerHTML = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+function send(){
+  const inp = document.getElementById('input');
+  const val = inp.value.trim();
+  if(!val) return;
+  addMsg(val, 'user');
+  inp.value='';
+  setTimeout(()=>{
+    const a = agents.find(x=>x.id===active) || agents[0];
+    const reply = `✅ درخواستت دریافت شد: <b>"${val}"</b><br><br>برای اجرای واقعی، همین پیام را در <b>چت اصلی</b> با تگ <span class="tag">${a.tag}</span> بفرست تا من به عنوان <b>${a.name}</b> کد کامل، فایل‌های قابل نصب و مستندات فارسی رو همین‌جا تحویل بدم.<br><br>🚀 آماده‌ای شروع کنیم؟`;
+    addMsg(reply, 'agent', a.accent);
+  }, 600);
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "id": "03-content",
+  "name": "Agent 03 — تولید محتوا و کپی‌رایتر",
+  "icon": "✍️",
+  "color": "#ff6b9d",
+  "model_recommended": "claude-3.5-sonnet",
+  "temperature": 0.8,
+  "top_p": 0.9,
+  "max_tokens": 4000,
+  "language": "fa",
+  "created": "2026-09-08",
+  "usage": "Copy system_prompt.txt into Custom GPT / Claude Project / Gemini Gem"
+}

@@ -1,0 +1,52 @@
+{
+  "team_name": "WP Elite Team - تیم نخبگان وردپرس",
+  "version": "1.0",
+  "created": "2026-09-08",
+  "agents": [
+    {
+      "id": "plugin-architect",
+      "name": "کدکس",
+      "role": "معمار ارشد افزونه",
+      "emoji": "🧩",
+      "color": "#2271b1",
+      "specialty": "Plugin Development",
+      "tag": "@codex"
+    },
+    {
+      "id": "theme-master",
+      "name": "تیموس",
+      "role": "استاد قالب و FSE",
+      "emoji": "🎨",
+      "color": "#d63638",
+      "specialty": "Theme Development",
+      "tag": "@themos"
+    },
+    {
+      "id": "woo-guru",
+      "name": "ووگر",
+      "role": "متخصص ووکامرس و فروشگاه‌ساز",
+      "emoji": "🛒",
+      "color": "#7f54b3",
+      "specialty": "WooCommerce",
+      "tag": "@wooger"
+    },
+    {
+      "id": "security-perf",
+      "name": "سکیورکس",
+      "role": "نگهبان امنیت و سرعت",
+      "emoji": "🛡️",
+      "color": "#00a32a",
+      "specialty": "Security & Performance",
+      "tag": "@securx"
+    },
+    {
+      "id": "frontend-wizard",
+      "name": "المنتورا",
+      "role": "جادوگر فرانت‌اند و بیلدرها",
+      "emoji": "⚡",
+      "color": "#f56e28",
+      "specialty": "Frontend & Builders",
+      "tag": "@elementora"
+    }
+  ]
+}

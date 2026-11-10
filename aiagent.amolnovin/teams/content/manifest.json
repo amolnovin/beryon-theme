@@ -1,0 +1,90 @@
+{
+  "package": "content-ai-agents-pack",
+  "version": "1.1.0",
+  "language": "fa",
+  "description": "تیم ۷ نفره تخصصی تولید محتوا با SOP تحریریه استاندارد — قابل استفاده در هر پروژه با هر مدل هوش مصنوعی",
+  "team_trigger": "@تیم",
+  "sop": "workflows/editorial-sop.md",
+  "agents": [
+    {
+      "id": "aria-strategist",
+      "name": "آریا",
+      "emoji": "🎯",
+      "role": "استراتژیست ارشد محتوا",
+      "trigger": "@آریا",
+      "file": "agents/01-aria-strategist.md",
+      "order": 1,
+      "outputs": ["استراتژی محتوا", "پرسونا", "بریف مقاله"]
+    },
+    {
+      "id": "roha-researcher",
+      "name": "رها",
+      "emoji": "🔬",
+      "role": "محقق و تحلیلگر محتوا",
+      "trigger": "@رها",
+      "file": "agents/06-roha-researcher.md",
+      "order": 2,
+      "outputs": ["منابع فارسی/انگلیسی", "آمار قابل استناد", "یافته‌های دیدگاه کاربران", "شکاف محتوایی"],
+      "capabilities": ["جستجوی-دو‌زبانه", "تحلیل-رقبا", "بررسی-دیدگاه‌ها", "راستی‌آزمایی"]
+    },
+    {
+      "id": "kian-seo",
+      "name": "کیان",
+      "emoji": "🔍",
+      "role": "متخصص سئو، AI Overview و اسکیما",
+      "trigger": "@کیان",
+      "file": "agents/03-kian-seo.md",
+      "order": 3,
+      "outputs": ["۱۵ کلیدواژه پر سرچ", "بریف سئو", "اسکیما JSON-LD", "نقشه لینک‌سازی داخلی"],
+      "capabilities": ["تحقیق-کلیدواژه", "AEO", "AI-Overview", "Schema", "لینک-داخلی"]
+    },
+    {
+      "id": "negar-writer",
+      "name": "نگار",
+      "emoji": "✍️",
+      "role": "نویسنده و کپی‌رایتر حرفه‌ای",
+      "trigger": "@نگار",
+      "file": "agents/02-negar-writer.md",
+      "order": 4,
+      "outputs": ["مقاله طبق اسکلت SOP (چکیده/مقدمه ۱۲۰کلمه/فصول/نتیجه‌گیری ۱۲۰کلمه)"]
+    },
+    {
+      "id": "tarane-editor",
+      "name": "ترانه",
+      "emoji": "🧐",
+      "role": "ویراستار ارشد و کنترل کیفیت",
+      "trigger": "@ترانه",
+      "file": "agents/04-tarane-editor.md",
+      "order": 5,
+      "outputs": ["متن ویراسته", "گزارش ویرایش", "تأیید QA"]
+    },
+    {
+      "id": "dariush-humanizer",
+      "name": "داریوش",
+      "emoji": "👤",
+      "role": "متخصص انسانی‌سازی لحن",
+      "trigger": "@داریوش",
+      "file": "agents/07-dariush-humanizer.md",
+      "order": 6,
+      "outputs": ["متن با لحن طبیعی انسانی بدون ردّپای AI"]
+    },
+    {
+      "id": "sara-social",
+      "name": "سارا",
+      "emoji": "📱",
+      "role": "متخصص شبکه‌های اجتماعی و محتوای بصری",
+      "trigger": "@سارا",
+      "file": "agents/05-sara-social.md",
+      "order": 7,
+      "outputs": ["کپشن و هشتگ", "اسکریپت ویدیو", "تصویر و اینفوگرافیک"]
+    }
+  ],
+  "article_requirements": {
+    "structure": ["چکیده", "مقدمه (~۱۲۰ کلمه + سؤال از خواننده)", "متن (حداکثر ۴–۵ فصل منطقی و پیوسته)", "نتیجه‌گیری (~۱۲۰ کلمه + پاسخ سؤال مقدمه)", "FAQ"],
+    "visuals_min": { "images": 8, "charts": 1, "tables": 1, "infographics": 1 },
+    "keywords_count": 15,
+    "internal_links_min": 3,
+    "schemas": ["Article", "FAQPage", "BreadcrumbList"],
+    "tone": "دوستانه، مشاوره‌محور، بدون ردّپای AI"
+  }
+}

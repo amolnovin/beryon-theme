@@ -1,0 +1,52 @@
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="مسیر صفحه">
+        <a href="index.html">خانه</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <a href="products.html">محصولات</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span>محصولات انجمادی</span>
+      </nav>
+      <h1>محصولات انجمادی بریون</h1>
+      <p>همبرگر، ناگت، شنیتسل، کباب لقمه، جوجه‌کباب زعفرانی، فلافل و سیب‌زمینی منجمد؛ ویژه فودسرویس، رستوران و فریزر خانه.</p>
+    </div>
+    <span class="ribbon-deco" aria-hidden="true"></span>
+  </section>
+
+  <section class="section" style="padding-top:56px">
+    <div class="container" data-filter-wrap>
+      <div class="filter-bar reveal">
+        <div class="filter-chips" role="group" aria-label="فیلتر نوع محصول انجمادی">
+          <button class="chip active" data-filter="all">همه</button>
+          <button class="chip" data-filter="burger">همبرگر</button>
+          <button class="chip" data-filter="nugget">ناگت و شنیتسل</button>
+          <button class="chip" data-filter="kebab">کباب و جوجه</button>
+          <button class="chip" data-filter="side">پیش‌غذا و مخلفات</button>
+        </div>
+        <label class="filter-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" data-search placeholder="جست‌وجو در انجمادی‌ها…" aria-label="جست‌وجو در انجمادی‌ها">
+        </label>
+        <span class="filter-count" data-count-label></span>
+      </div>
+      <h2 class="sr-only">فهرست محصولات انجمادی بریون</h2>
+      <div class="grid products-grid" data-product-grid>{{GRID:frozen}}</div>
+      <div class="no-result">محصولی مطابق فیلتر شما یافت نشد.</div>
+
+      <div class="sec-head reveal" style="margin:64px auto 40px">
+        <span class="ribbon-tag">گروه‌های دیگر</span>
+        <h2>سایر دسته‌بندی‌های بریون</h2>
+        <span class="underline"></span>
+      </div>
+      <div class="grid cats-grid">{{OTHER_CATS:frozen}}</div>
+
+      <div class="seo-text">
+        <h2>محصولات انجمادی بریون؛ آماده طبخ در چند دقیقه</h2>
+        <p>خط انجمادی بریون با تونل انجماد سریع (IQF)، بافت و طعم محصولات را در اوج تازگی نگه می‌دارد. همبرگرهای ۳۰ تا ۹۰ درصد، ناگت مرغ ۷۰ درصد، شنیتسل سوخاری، کباب لقمه و جوجه‌کباب زعفرانی در بسته‌بندی‌های خانگی ۲۴۰ و ۹۰۰ گرمی و بسته‌های فله ۲.۵ کیلوگرمی ویژه فودسرویس عرضه می‌شوند.</p>
+        <h3>زنجیره سرد یکپارچه</h3>
+        <p>از لحظه انجماد تا قفسه فروشگاه، محصولات در دمای منفی ۱۸ درجه حمل و نگهداری می‌شوند تا ایمنی و کیفیت تضمین شود.</p>
+      </div>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,13 @@
+{
+  "id": "01-strategist",
+  "name": "Agent 01 — استراتژیست ارشد (CMO)",
+  "icon": "🧠",
+  "color": "#7c6cff",
+  "model_recommended": "gpt-4o",
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "max_tokens": 4000,
+  "language": "fa",
+  "created": "2026-09-08",
+  "usage": "Copy system_prompt.txt into Custom GPT / Claude Project / Gemini Gem"
+}

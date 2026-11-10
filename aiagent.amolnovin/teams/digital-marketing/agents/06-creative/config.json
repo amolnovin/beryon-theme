@@ -1,0 +1,13 @@
+{
+  "id": "06-creative",
+  "name": "Agent 06 — طراح خلاق و ویدیوساز",
+  "icon": "🎨",
+  "color": "#a855f7",
+  "model_recommended": "claude-3.5-sonnet",
+  "temperature": 0.9,
+  "top_p": 0.9,
+  "max_tokens": 4000,
+  "language": "fa",
+  "created": "2026-09-08",
+  "usage": "Copy system_prompt.txt into Custom GPT / Claude Project / Gemini Gem"
+}

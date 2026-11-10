@@ -1,0 +1,5 @@
+{{--
+  کارت محصول — مارک‌آپ دقیقاً مطابق قالب HTML نهایی
+  $product = خروجی \App\Products::normalize()
+  هوک‌های data-cat / data-tags / data-name برای فیلتر و جست‌وجوی زندهٔ assets/js/main.js
+--}}<article class="product-card reveal" data-cat="{{ $product['category'] }}" data-tags="{{ implode(' ', (array) ($product['tags'] ?? [])) }}" data-name="{{ $product['title'] }}"><a class="thumb" href="{{ esc_url($product['link']) }}" aria-label="{{ $product['title'] }}"><img src="{{ esc_url($product['image']) }}" alt="{{ $product['title'] }}" loading="lazy">@if (! empty($product['meat']))<span class="pct">{{ beryon_fa($product['meat']) }}٪ گوشت</span>@endif<span class="cat-tag">{{ $product['cat_short'] }}</span></a><div class="body"><h3><a href="{{ esc_url($product['link']) }}">{{ $product['title'] }}</a></h3><div class="meta">@foreach (array_slice((array) ($product['badges'] ?? []), 0, 2) as $badge)<span class="badge">{{ $badge }}</span>@endforeach</div><a class="more" href="{{ esc_url($product['link']) }}">{{ beryon_tokens((string) beryon_opt('products.more_label', 'مشاهده محصول')) }} @php(beryon_svg('arrow'))</a></div></article>

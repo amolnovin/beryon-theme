@@ -1,0 +1,31 @@
+{
+  "format": 1,
+  "theme": "beryon",
+  "id": "beryon-1.0.1-sample",
+  "version": "1.0.1",
+  "from_version": "1.0.0",
+  "channel": "stable",
+  "label": "نمونه بسته به‌روزرسانی (فقط مستندات)",
+  "notes": "این فایل یک نمونه مرجع است و نباید اعمال شود؛ ساختار کامل در docs/PATCH_SPEC.md توضیح داده شده است.",
+  "author": "Beryon Web Team",
+  "released_at": "2026-10-27T12:00:00+03:30",
+  "requires": {
+    "php": "8.1",
+    "wordpress": "6.4",
+    "theme_min": "1.0.0"
+  },
+  "files": [
+    {
+      "path": "resources/css/wp.css",
+      "op": "copy",
+      "sha256": "447c5d16be5f8d6fe3035afe660eb72a6f16be9a1c655d37517cf0517e0298bf",
+      "size": 6698,
+      "mode": "0644"
+    }
+  ],
+  "post_apply": [
+    "flush_rewrites",
+    "clean_caches",
+    "refingerprint"
+  ]
+}

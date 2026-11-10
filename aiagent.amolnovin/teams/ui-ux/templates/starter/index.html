@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>قالب شروع مدرن</title>
+  <meta name="description" content="قالب شروع ریسپانسیو با حرکت scroll-driven و bento grid">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">رفتن به محتوای اصلی</a>
+
+  <header class="site-header glass">
+    <a class="brand" href="#top" aria-label="صفحه اصلی">برند شما</a>
+    <nav aria-label="ناوبری اصلی">
+      <ul class="nav-list">
+        <li><a href="#features">ویژگی‌ها</a></li>
+        <li><a href="#work">نمونه‌کارها</a></li>
+        <li><a href="#contact">تماس</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn-primary" href="#contact">شروع کنید</a>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-bg" data-parallax="0.25" aria-hidden="true"></div>
+      <div class="hero-content">
+        <p class="eyebrow reveal">طراحی برای تبدیل</p>
+        <h1 class="display reveal">تجربه‌ای روان، سریع و به‌یادماندنی</h1>
+        <p class="lead reveal">این قالب را با توکن‌های طراحی و محتوای واقعی پروژه‌تان جایگزین کنید.</p>
+        <div class="hero-actions reveal">
+          <a class="btn btn-primary" href="#contact">شروع پروژه</a>
+          <a class="btn btn-ghost" href="#features">مشاهده ویژگی‌ها</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features" aria-labelledby="features-title">
+      <header class="section-head reveal">
+        <p class="eyebrow">ویژگی‌ها</p>
+        <h2 id="features-title">همه چیز در یک نگاه</h2>
+      </header>
+
+      <div class="bento">
+        <article class="card card-wide reveal">
+          <h3>سرعت و سادگی</h3>
+          <p>فقط HTML، CSS و JS خالص؛ بدون وابستگی سنگین.</p>
+        </article>
+        <article class="card reveal">
+          <h3>ریسپانسیو</h3>
+          <p>از ۳۷۵px تا دسکتاپ بزرگ.</p>
+        </article>
+        <article class="card glass-card reveal">
+          <h3>حرکت با معنا</h3>
+          <p>انیمیشن‌ها با scroll و احترام به reduced motion.</p>
+        </article>
+        <article class="card card-wide reveal">
+          <h3>دسترس‌پذیر</h3>
+          <p>فوکوس قابل‌مشاهده، کنتراست مناسب و ساختار معنایی.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="work" aria-labelledby="work-title">
+      <header class="section-head reveal">
+        <p class="eyebrow">نمونه‌کارها</p>
+        <h2 id="work-title">پروژه‌های منتخب</h2>
+      </header>
+      <div class="work-grid">
+        <figure class="work-item reveal"><div class="work-thumb t1"></div><figcaption>پروژه نمونه یک</figcaption></figure>
+        <figure class="work-item reveal"><div class="work-thumb t2"></div><figcaption>پروژه نمونه دو</figcaption></figure>
+        <figure class="work-item reveal"><div class="work-thumb t3"></div><figcaption>پروژه نمونه سه</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="section" id="contact" aria-labelledby="contact-title">
+      <div class="cta-box reveal">
+        <h2 id="contact-title">آماده شروع هستید؟</h2>
+        <form class="contact-form" action="#" method="post">
+          <div class="field">
+            <label for="name">نام</label>
+            <input id="name" name="name" type="text" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="email">ایمیل</label>
+            <input id="email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <button class="btn btn-primary" type="submit">ارسال</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© ۲۰۲۶ برند شما. ساخته‌شده با قالب شروع.</p>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

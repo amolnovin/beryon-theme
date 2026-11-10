@@ -1,0 +1,13 @@
+{
+  "id": "07-email",
+  "name": "Agent 07 — ایمیل مارکتینگ و اتوماسیون",
+  "icon": "✉️",
+  "color": "#00d084",
+  "model_recommended": "gpt-4o",
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "max_tokens": 4000,
+  "language": "fa",
+  "created": "2026-09-08",
+  "usage": "Copy system_prompt.txt into Custom GPT / Claude Project / Gemini Gem"
+}

@@ -1,0 +1,16 @@
+# گزارش‌های کاربر و اسکرین‌شات‌های خصوصی
+uploads/
+
+# بسته‌های بیلد (از release/artifact ساخته می‌شوند، نه منبع)
+*.zip
+
+# اسکرین‌شات‌های بزرگ QA
+qa-*.png
+
+# پیکربندی محیط
+.config/
+.DS_Store
+
+# کش کامپایل Blade و لاگ‌ها (placeholderها در مخزن هست)
+beryon-wp/storage/framework/views/*.php
+beryon-wp/storage/logs/*.log

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مرکز کنترل 10 ایجنت هوش مصنوعی دیجیتال مارکتینگ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Vazirmatn',Tahoma,sans-serif;background:#0a0a14;color:#fff;overflow-x:hidden}
+a{color:inherit}
+.header{background:radial-gradient(ellipse at top, #1a1a4a 0%, #0a0a14 70%);padding:40px 20px;text-align:center;border-bottom:1px solid #222}
+.header h1{font-size:32px;font-weight:800;background:linear-gradient(90deg,#7c6cff,#00e5ff,#7c6cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px}
+.header p{color:#a0a0c0;max-width:750px;margin:0 auto;line-height:1.8;font-size:15px}
+.badge{display:inline-block;background:rgba(124,108,255,0.15);border:1px solid #7c6cff;color:#b3a6ff;padding:6px 16px;border-radius:999px;font-size:12px;margin-bottom:18px}
+.workflow{max-width:1100px;margin:30px auto;padding:0 20px}
+.workflow h2{font-size:18px;margin-bottom:16px;color:#fff}
+.flow{display:flex;gap:8px;overflow-x:auto;padding:16px;background:#141427;border-radius:16px;border:1px solid #222;scrollbar-width:thin}
+.flow::-webkit-scrollbar{height:6px}
+.flow-step{min-width:160px;background:#1c1c34;border:1px solid #2a2a4a;border-radius:12px;padding:14px;text-align:center;flex-shrink:0;position:relative}
+.flow-step::after{content:'←';position:absolute;left:-14px;top:50%;transform:translateY(-50%);color:#7c6cff;font-weight:bold}
+.flow-step:last-child::after{display:none}
+.flow-step .num{width:26px;height:26px;background:#7c6cff;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin:0 auto 8px}
+.flow-step b{font-size:13px;display:block;margin-bottom:4px}
+.flow-step span{font-size:11px;color:#8a8ab0;line-height:1.5}
+.container{max-width:1200px;margin:20px auto;padding:0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;margin-top:20px}
+.card{background:linear-gradient(145deg,#141427,#0f0f22);border:1px solid #23234a;border-radius:18px;padding:20px;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;background:var(--accent)}
+.card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 12px 30px rgba(0,0,0,0.4)}
+.card-head{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.card-head h3{font-size:16px;font-weight:800;margin-bottom:2px}
+.card-head small{font-size:11px;color:#8a8ab0}
+.tag{display:inline-block;font-size:10px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.07);border:1px solid #333;color:#ccc;margin-left:4px;margin-bottom:6px}
+.kpi{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.kpi span{background:#1a1a33;border:1px solid #2a2a4a;padding:4px 8px;border-radius:8px;font-size:11px;color:#b8b8d8}
+.card p{font-size:12.5px;color:#a0a0c0;line-height:1.7;min-height:42px}
+.card .btn{margin-top:14px;width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-weight:700;cursor:pointer;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:99;padding:20px}
+.modal.active{display:flex}
+.modal-box{background:#141427;border:1px solid #333;border-radius:18px;max-width:820px;width:100%;max-height:90vh;overflow:auto;position:relative}
+.modal-head{padding:22px;border-bottom:1px solid #222;position:sticky;top:0;background:#141427;z-index:2;display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:18px}
+.close{width:36px;height:36px;background:#1f1f3a;border:1px solid #333;border-radius:10px;color:#fff;cursor:pointer;font-size:18px}
+.modal-body{padding:22px}
+.section{margin-bottom:20px}
+.section h4{font-size:13px;color:#7c6cff;margin-bottom:8px;border-right:3px solid #7c6cff;padding-right:8px}
+.section ul{list-style:none;padding:0}
+.section li{font-size:13px;color:#c8c8e0;padding:6px 0;padding-right:18px;position:relative;line-height:1.7}
+.section li::before{content:'•';position:absolute;right:0;color:var(--accent);font-weight:bold}
+.two{columns:2;column-gap:20px}
+@media(max-width:700px){.two{columns:1}}
+.prompt-box{background:#0a0a1a;border:1px dashed #7c6cff;border-radius:12px;padding:12px;font-size:12px;color:#b8b8ff;line-height:1.7;white-space:pre-wrap;position:relative}
+.copy{position:absolute;left:10px;top:10px;background:#7c6cff;color:#fff;border:none;padding:4px 10px;border-radius:8px;font-size:11px;cursor:pointer}
+.terminal{max-width:1200px;margin:30px auto;padding:0 20px}
+.term-box{background:#12122a;border:1px solid #23234a;border-radius:18px;overflow:hidden}
+.term-head{background:#1a1a3a;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;flex-wrap:wrap;gap:10px}
+.term-head h3{font-size:14px}
+.term-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.term-controls select,.term-controls button{padding:8px 12px;border-radius:10px;border:1px solid #333;background:#0f0f22;color:#fff;font-family:inherit;font-size:12px}
+.term-controls button{background:#7c6cff;border-color:#7c6cff;font-weight:700;cursor:pointer}
+.chat{height:380px;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#0a0a14}
+.msg{max-width:85%;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.8}
+.msg.user{align-self:flex-start;background:#7c6cff;color:#fff;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-end;background:#1c1c34;border:1px solid #2a2a4a;color:#e0e0ff;border-bottom-left-radius:4px}
+.msg.bot b{color:#7c6cff}
+.input-area{display:flex;gap:10px;padding:12px;background:#141427;border-top:1px solid #222}
+.input-area textarea{flex:1;background:#0a0a14;border:1px solid #333;color:#fff;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:13px;resize:none;height:48px}
+.input-area button{padding:0 20px;background:#00e5ff;color:#000;border:none;border-radius:12px;font-weight:800;cursor:pointer}
+.hint{font-size:11px;color:#777;text-align:center;padding:8px}
+.footer{text-align:center;padding:30px;color:#666;font-size:11px}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="badge">✨ سیستم مولتی‌ایجنت دیجیتال مارکتینگ - نسخه 1.0</div>
+<h1>مرکز کنترل ۱۰ ایجنت هوش مصنوعی دیجیتال مارکتینگ</h1>
+<p>یک تیم کامل دیجیتال مارکتینگ که ۲۴ ساعت شبانه‌روز برای سایت و کسب‌وکارت کار می‌کند. هر ایجنت یک متخصص تمام‌عیار است — از استراتژی تا اجرا و تحلیل. روی هر کارت کلیک کن تا وظایف، KPI و پرامپت اختصاصی‌اش را ببینی.</p>
+</div>
+
+<div class="workflow">
+<h2>🔄 چرخه همکاری ایجنت‌ها (Workflow)</h2>
+<div class="flow">
+<div class="flow-step"><div class="num">1</div><b>تحقیق بازار</b><span>ایجنت 09 رقبا و نیاز بازار را تحلیل می‌کند</span></div>
+<div class="flow-step"><div class="num">2</div><b>استراتژی</b><span>ایجنت 01 استراتژی و نقشه راه می‌سازد</span></div>
+<div class="flow-step"><div class="num">3</div><b>سئو + محتوا</b><span>ایجنت 02 و 03 ترافیک ارگانیک می‌سازند</span></div>
+<div class="flow-step"><div class="num">4</div><b>خلاقیت</b><span>ایجنت 06 تصاویر و ویدیو می‌سازد</span></div>
+<div class="flow-step"><div class="num">5</div><b>انتشار</b><span>ایجنت 04 و 05 در سوشال و تبلیغات منتشر می‌کنند</span></div>
+<div class="flow-step"><div class="num">6</div><b>تبدیل</b><span>ایجنت 10 بازدید را به مشتری تبدیل می‌کند</span></div>
+<div class="flow-step"><div class="num">7</div><b>نگهداشت</b><span>ایجنت 07 با ایمیل مشتری را برمی‌گرداند</span></div>
+<div class="flow-step"><div class="num">8</div><b>تحلیل</b><span>ایجنت 08 همه را اندازه‌گیری و بهینه می‌کند</span></div>
+</div>
+</div>
+
+<div class="container">
+<div class="grid" id="grid"></div>
+</div>
+
+<div class="terminal">
+<div class="term-box">
+<div class="term-head">
+<h3>💬 شبیه‌ساز گفتگو با ایجنت‌ها — همینجا دستور بده!</h3>
+<div class="term-controls">
+<select id="agentSelect"></select>
+<button onclick="clearChat()">پاک کردن</button>
+</div>
+</div>
+<div class="chat" id="chat">
+<div class="msg bot">سلام! من مرکز کنترل هستم. یک ایجنت را از بالا انتخاب کن و مثلاً بنویس: <b>«برای سایت فروش کفش، تقویم محتوایی یک ماهه بساز»</b> یا <b>«کمپین گوگل ادز با بودجه ۵۰۰ یورو طراحی کن»</b> — ایجنت مربوطه همینجا جواب می‌دهد. روی کارت‌ها هم کلیک کن تا پرامپت کامل هر ایجنت را کپی کنی.</div>
+</div>
+<div class="input-area">
+<textarea id="userInput" placeholder="دستورت را اینجا بنویس... (Enter برای ارسال)"></textarea>
+<button onclick="sendMsg()">ارسال 🚀</button>
+</div>
+<div class="hint">نکته: این شبیه‌ساز داخل همین صفحه کار می‌کند. اگر می‌خواهی من (هوش مصنوعی اصلی) به عنوان آن ایجنت واقعا کار را انجام دهم، فقط بگو: «با ایجنت ۳ کار کن» و من همان نقش را می‌گیرم.</div>
+</div>
+</div>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+<div class="modal-box">
+<div class="modal-head">
+<h3 id="mTitle"></h3>
+<button class="close" onclick="closeModal()">×</button>
+</div>
+<div class="modal-body" id="mBody"></div>
+</div>
+</div>
+
+<div class="footer">ساخته شده برای تو — در همین چت می‌توانی هر ۱۰ ایجنت را فراخوانی کنی. فقط بگو «ایجنت ۵ فعال شو»</div>
+
+<script>
+const agents=[
+{
+id:1, name:"Agent 01 — استراتژیست ارشد", role:"Chief Marketing Strategist / CMO Agent", accent:"#7c6cff", bg:"#1e1a4a", icon:"🧠",
+tags:["استراتژی","نقشه راه","بودجه‌بندی","هماهنگ‌کننده"],
+desc:"مغز متفکر تیم. استراتژی کلان، بودجه، کانال‌ها و KPI کل کسب‌وکار را تعیین و ۹ ایجنت دیگر را رهبری می‌کند.",
+kpis:["ROI کل","CAC","ROAS","سهم بازار","رشد ماهانه"],
+tasks:{
+  main:["تدوین استراتژی دیجیتال مارکتینگ ۳/۶/۱۲ ماهه بر اساس اهداف بیزنس (فروش، لید، برند)","تعیین بودجه تفکیکی برای سئو، تبلیغات، محتوا، سوشال و ایمیل","انتخاب کانال‌های اصلی (Google, Instagram, LinkedIn, Email...) بر اساس پرسونای مشتری","تعریف قیف بازاریابی (Awareness → Consideration → Conversion → Retention)","هماهنگی و اولویت‌بندی تسک‌ها بین ۹ ایجنت دیگر","مدیریت بحران و تصمیم‌گیری در مورد کمپین‌های ناموفق"],
+  daily:["چک کردن داشبورد KPI کل (وضعیت ترافیک، فروش، هزینه)","هماهنگی تسک‌های روزانه بین ایجنت‌ها","تایید تقویم محتوایی و کمپین‌ها"],
+  weekly:["جلسه هفتگی تحلیل عملکرد هفتگی و تخصیص مجدد بودجه","گزارش به مدیرعامل / صاحب کسب‌وکار","به‌روزرسانی استراتژی بر اساس دیتای ایجنت 08"],
+  monthly:["گزارش ماهانه کامل + پیشنهاد استراتژی ماه بعد","تحلیل رقبا با همکاری ایجنت 09","برنامه‌ریزی کمپین‌های فصلی"],
+  inputs:["اهداف بیزنس، بودجه، اطلاعات محصول، آنالیز رقبا از ایجنت 09، دیتا از ایجنت 08"],
+  outputs:["سند استراتژی، نقشه راه، بودجه‌بندی، تقویم کلان، OKR و KPI"],
+  tools:["Notion / Asana","Google Sheets","Miro","ChatGPT / Claude","GA4 + Looker Studio"],
+  collab:"به همه ایجنت‌ها دستور می‌دهد و خروجی ایجنت 08 و 09 را به استراتژی تبدیل می‌کند."
+},
+prompt:`تو Agent 01 - استراتژیست ارشد دیجیتال مارکتینگ هستی.
+ماموریت: برای این کسب‌وکار [نام + حوزه + سایت + مخاطب هدف + بودجه ماهانه + هدف اصلی] یک استراتژی 90 روزه بنویس.
+خروجی باید شامل: 1) تحلیل SWOT سریع 2) پرسونای مشتری 3) قیف بازاریابی 4) تفکیک بودجه پیشنهادی (درصدی) 5) کانال‌های اولویت‌دار 6) 3 کمپین اصلی 90 روزه 7) KPI های کلیدی
+لحن: حرفه‌ای، عدد محور، قابل اجرا.`
+},
+{
+id:2, name:"Agent 02 — متخصص سئو", role:"SEO Master Agent", accent:"#00e5ff", bg:"#0f2f3a", icon:"🔍",
+tags:["سئو تکنیکال","محتوا سئو","لینک‌سازی","سرچ کنسول"],
+desc:"مسئول آوردن ترافیک رایگان و پایدار از گوگل. از سئو تکنیکال تا کیورد ریسرچ و لینک‌سازی.",
+kpis:["ترافیک ارگانیک","رتبه کلمات کلیدی","CTR","Core Web Vitals","بک‌لینک معتبر"],
+tasks:{
+  main:["تحقیق کلمات کلیدی (Keyword Research) بر اساس intent کاربر و سختی کلمه","سئو تکنیکال: سرعت، موبایل، Schema، نقشه سایت، کنونیکال","بهینه‌سازی On-Page: عنوان، متا، هدینگ، لینک داخلی، تصاویر","استراتژی محتوا سئو محور با همکاری ایجنت 03","لینک‌سازی داخلی و خارجی (Outreach، رپورتاژ)","مانیتورینگ روزانه سرچ کنسول و رفع خطاها"],
+  daily:["چک سرچ کنسول و Ahrefs/SEMrush","بررسی رتبه 20 کلمه کلیدی اصلی"],
+  weekly:["گزارش رشد ترافیک ارگانیک و افت/رشد رتبه‌ها","پیشنهاد 5 موضوع جدید بر اساس Gap Analysis","بررسی رقبا (ایجنت 09)"],
+  monthly:["آدیت کامل سئو تکنیکال","گزارش بک‌لینک‌ها و فرصت‌های جدید","به‌روزرسانی محتواهای قدیمی"],
+  inputs:["لیست محصولات/خدمات، دسترسی سرچ کنسول و GA4، تحلیل رقبا"],
+  outputs:["لیست کلمات کلیدی، تقویم سئو، چک‌لیست بهینه‌سازی صفحات، گزارش رتبه"],
+  tools:["Google Search Console","GA4","Ahrefs / SEMrush","Screaming Frog","PageSpeed Insights"],
+  collab:"کلمات کلیدی را به ایجنت 03 می‌دهد، نیازهای تکنیکال را به توسعه‌دهنده، و با ایجنت 08 دیتا را تحلیل می‌کند."
+},
+prompt:`تو Agent 02 - متخصص سئو هستی.
+برای سایت [آدرس سایت] و کلمه کلیدی اصلی [کلمه] این کارها را انجام بده:
+1) 20 کلمه کلیدی (10 اصلی + 10 لانگ‌تیل) با سختی و حجم جستجو تخمینی
+2) ساختار پیشنهادی H1-H3 برای صفحه
+3) متا تایتل (60 کاراکتر) و متا دیسکریپشن (155 کاراکتر)
+4) 5 سوال FAQ با Schema
+5) 3 پیشنهاد لینک داخلی و 2 ایده رپورتاژ
+خروجی را به صورت جدول بده.`
+},
+{
+id:3, name:"Agent 03 — تولید محتوا و کپی‌رایتر", role:"Content & Copy Agent", accent:"#ff6b9d", bg:"#3a1224", icon:"✍️",
+tags:["مقاله","کپشن","سناریو","ایمیل کپی"],
+desc:"کارخانه تولید محتوا. از پست وبلاگ و کپشن اینستا تا سناریو ویدیو و متن تبلیغ.",
+kpis:["تعداد محتوا/ماه","نرخ تعامل","زمان ماندگاری","نرخ تبدیل محتوا"],
+tasks:{
+  main:["تولید تقویم محتوایی ماهانه (وبلاگ، اینستا، لینکدین، یوتیوب) بر اساس کلمات ایجنت 02","نوشتن مقالات سئو شده 1200-2500 کلمه‌ای","نوشتن کپی تبلیغ (هدلاین، CTA، لندینگ)","نوشتن سناریو ریلز/تیک‌تاک/یوتیوب شورت با هوک قوی","بازنویسی محتوا برای کانال‌های مختلف (Repurpose)","رعایت لحن برند (Brand Voice)"],
+  daily:["نوشتن/ویرایش 1-2 محتوا","تحویل کپشن و سناریو به ایجنت 04 و 06"],
+  weekly:["تحویل 3 مقاله + 7 کپشن + 2 سناریو ویدیو","بررسی کامنت‌ها برای ایده محتوا"],
+  monthly:["آپدیت 5 مقاله قدیمی برای سئو","گزارش بهترین محتواها از نظر ترافیک/تعامل"],
+  inputs:["کلمات کلیدی از ایجنت 02، استراتژی از ایجنت 01، دیتای رقبا از 09"],
+  outputs:["مقاله، کپشن، سناریو، متن لندینگ، متن ایمیل"],
+  tools:["ChatGPT / Claude","Grammarly","Notion","Canva Docs","Google Docs"],
+  collab:"محتوا را به ایجنت 04 (سوشال)، 06 (گرافیک) و 07 (ایمیل) تحویل می‌دهد."
+},
+prompt:`تو Agent 03 - کپی‌رایتر و تولیدکننده محتوا هستی.
+برای [موضوع/محصول] با مخاطب [پرسونا] و لحن [صمیمی/رسمی/طنز] بنویس:
+- یک مقاله 1500 کلمه‌ای سئو شده با هدینگ H2/H3
+- 3 کپشن اینستاگرام (هوک + بدنه + CTA + 10 هشتگ)
+- 1 سناریو ریلز 30 ثانیه‌ای (هوک 3 ثانیه + بدنه + CTA)
+- 3 هدلاین تبلیغاتی A/B تست
+سئو: کلمه کلیدی [کلمه] را 5-7 بار به صورت طبیعی بگنجان.`
+},
+{
+id:4, name:"Agent 04 — مدیر شبکه‌های اجتماعی", role:"Social Media Manager Agent", accent:"#ff7a00", bg:"#3a1f0a", icon:"📱",
+tags:["اینستاگرام","لینکدین","تلگرام","کامنت"],
+desc:"صدای برند در سوشال. رشد فالوور، تعامل، و تبدیل مخاطب به مشتری.",
+kpis:["رشد فالوور","Engagement Rate","Reach","کلیک به سایت","لید از سوشال"],
+tasks:{
+  main:["مدیریت انتشار محتوا طبق تقویم (اینستا، لینکدین، تیک‌تاک، تلگرام، X)","طراحی استوری، ریلز، لایو و نظرسنجی تعاملی","پاسخ به کامنت و دایرکت در <2 ساعت (با همکاری ایجنت 09 CRM)","اجرای کمپین UGC و چالش‌ها","همکاری با اینفلوئنسرها (لیست از ایجنت 09)","آنالیز بهترین ساعت انتشار"],
+  daily:["انتشار 1-2 پست/استوری، پاسخ به کامنت/دایرکت","چک کردن ترندهای روز"],
+  weekly:["گزارش رشد و تعامل، پیشنهاد 3 ایده وایرال","برنامه هفته آینده"],
+  monthly:["کمپین ماهانه سوشال + گزارش کامل + تقویم ماه بعد"],
+  inputs:["محتوا و کپشن از ایجنت 03، گرافیک از 06، استراتژی از 01"],
+  outputs:["پست منتشر شده، گزارش تعامل، لیست اینفلوئنسرهای پیشنهادی"],
+  tools:["Meta Business Suite","Buffer / Hootsuite","Telegram","CapCut","Instagram Insights"],
+  collab:"محتوا را از 03 می‌گیرد، گرافیک را از 06 سفارش می‌دهد، لیدها را به 07 و 10 پاس می‌دهد."
+},
+prompt:`تو Agent 04 - مدیر شبکه‌های اجتماعی هستی.
+برای برند [نام] در [پلتفرم: اینستاگرام/لینکدین] برای 7 روز آینده تقویم بساز:
+هر روز: موضوع + فرمت (پست/ریلز/استوری/کاروسل) + هوک + کپشن کوتاه + CTA + ساعت پیشنهادی انتشار به وقت اروپا
+همچنین 3 ایده تعاملی (نظرسنجی، کوییز، چالش) بده.`
+},
+{
+id:5, name:"Agent 05 — متخصص تبلیغات پولی", role:"Performance / Paid Ads Agent", accent:"#ffd600", bg:"#3a3200", icon:"💸",
+tags:["Google Ads","Meta Ads","ریتارگتینگ","A/B تست"],
+desc:"مسئول رشد سریع با پول. کمپین‌های گوگل، اینستاگرام و ریتارگتینگ را با بهترین ROAS می‌بندد.",
+kpis:["ROAS","CPA","CTR تبلیغ","نرخ تبدیل","هزینه به ازای لید"],
+tasks:{
+  main:["طراحی و اجرای کمپین Google Search / PMax / YouTube Ads","طراحی کمپین Meta (اینستا/فیسبوک) و تیک‌تاک ادز","ریتارگتینگ بازدیدکنندگان سایت و سبد خرید رها شده","نوشتن هدلاین و دیسکریپشن تبلیغ با همکاری ایجنت 03","A/B تست مداوم خلاقیت، هدلاین و مخاطب","بهینه‌سازی روزانه بودجه و Bid Strategy"],
+  daily:["چک کردن هزینه، ROAS و خاموش/روشن کردن ادست‌های ضعیف"],
+  weekly:["گزارش ROAS و CPA + پیشنهاد بودجه هفته بعد","تست 2 خلاقیت جدید از ایجنت 06"],
+  monthly:["گزارش کامل + اسکیل کمپین‌های برنده + قطع کمپین‌های بازنده"],
+  inputs:["استراتژی و بودجه از 01، کپی از 03، بنر/ویدیو از 06، دیتای تبدیل از 08 و 10"],
+  outputs:["کمپین فعال، گزارش ROAS، لیست کلمات منفی گوگل، پیشنهاد بودجه"],
+  tools:["Google Ads","Meta Ads Manager","Google Tag Manager","GA4","Looker Studio"],
+  collab:"نزدیک‌ترین همکاری را با 03 (کپی)، 06 (خلاقیت) و 08 (دیتا) دارد."
+},
+prompt:`تو Agent 05 - متخصص تبلیغات پولی هستی.
+با بودجه [مبلغ] برای [محصول/خدمت] با هدف [فروش/لید] کمپین طراحی کن:
+1) ساختار کمپین (کمپین > ادست > اد) برای Google و Meta
+2) 3 هدلاین + 2 دیسکریپشن برای هر پلتفرم
+3) مخاطب هدف (سن، علاقه، لوکیشن)
+4) استراتژی Bid و بودجه روزانه
+5) 5 کلمه منفی برای گوگل
+6) پلن ریتارگتینگ 7 و 30 روزه`
+},
+{
+id:6, name:"Agent 06 — طراح خلاق و ویدیوساز", role:"Creative & Visual Agent", accent:"#a855f7", bg:"#2a1542", icon:"🎨",
+tags:["بنر","ریلز","لوگو","پست"],
+desc:"چشم تیم. هر چیزی که دیده می‌شود را می‌سازد: بنر، پست، ویدیو، لندینگ.",
+kpis:["تعداد خروجی","نرخ کلیک بنر","ویو و Completion Rate","زمان تحویل"],
+tasks:{
+  main:["طراحی پست، استوری، کاروسل، بنر تبلیغاتی","ساخت ویدیو کوتاه (ریلز/شورت) و موشن ساده","طراحی لندینگ و بنر سایت با تمرکز بر CRO (همکاری با 10)","حفظ هویت بصری برند (رنگ، فونت، آیکون)","ساخت کیت تبلیغاتی برای ایجنت 05","ویرایش عکس محصول"],
+  daily:["تحویل 2-3 طرح/ویدیو","ادیت سریع بر اساس فیدبک"],
+  weekly:["پک هفتگی محتوا برای سوشال + 2 بنر A/B تست"],
+  monthly:["به‌روزرسانی برندبوک + گزارش بهترین خلاقیت‌ها از نظر CTR"],
+  inputs:["متن از 03، تقویم از 04، درخواست بنر از 05، وایرفریم از 10"],
+  outputs:["فایل JPG/PNG/MP4، سورس، بنر HTML5"],
+  tools:["Canva / Figma","Adobe Photoshop / Premiere","CapCut","Midjourney / Ideogram"],
+  collab:"به همه ایجنت‌ها سرویس می‌دهد، مخصوصا 03، 04 و 05."
+},
+prompt:`تو Agent 06 - طراح خلاق هستی.
+برای [محصول/کمپین] با پیام [پیام اصلی] و لحن بصری [مدرن/لوکس/فان] بساز:
+1) ایده بصری (Concept) در یک جمله
+2) پالت رنگ (3 رنگ HEX) + 2 فونت پیشنهادی
+3) 3 ایده پست (کاروسل/ریلز/استوری) با توضیح کادر به کادر
+4) متن روی بنر (Headline 5 کلمه + CTA 2 کلمه)
+5) پرامپت Midjourney برای تصویر اصلی`
+},
+{
+id:7, name:"Agent 07 — ایمیل مارکتینگ و اتوماسیون", role:"Email & Automation Agent", accent:"#00d084", bg:"#0f2f1f", icon:"✉️",
+tags:["خبرنامه","قیف ایمیل","اتوماسیون","ریتنشن"],
+desc:"مسئول برگرداندن مشتری. لید را به خریدار و خریدار را به مشتری وفادار تبدیل می‌کند.",
+kpis:["Open Rate","Click Rate","Conversion از ایمیل","Unsubscribe","درآمد از ایمیل"],
+tasks:{
+  main:["ساخت قیف ایمیل: خوش‌آمدگویی، سبد رها شده، پس از خرید، ری‌انگیجمنت","طراحی خبرنامه هفتگی با همکاری ایجنت 03","اتوماسیون با تقسیم‌بندی (Segmentation) بر اساس رفتار","A/B تست موضوع، زمان ارسال و CTA","مدیریت لیست و بهداشت ایمیل (تمیز کردن ایمیل‌های مرده)","اتصال به CRM"],
+  daily:["چک کردن نرخ باز شدن و کلیک کمپین‌های فعال"],
+  weekly:["ارسال 1-2 خبرنامه + گزارش عملکرد","ساخت 1 اتوماسیون جدید"],
+  monthly:["گزارش درآمد ایمیل + بهینه‌سازی قیف + تمیز کردن لیست"],
+  inputs:["لیست ایمیل از سایت/لید مگنت، محتوا از 03، دیتای رفتار از 08/10"],
+  outputs:["کمپین ایمیل، اتوماسیون فعال، گزارش عملکرد"],
+  tools:["Mailchimp / Brevo","Klaviyo","Zapier / Make","GA4"],
+  collab:"ورودی اصلی‌اش لید از 04، 05 و 10 است و محتوا را از 03 می‌گیرد."
+},
+prompt:`تو Agent 07 - متخصص ایمیل مارکتینگ هستی.
+برای [هدف: خوش‌آمدگویی/سبد رها شده/خبرنامه] با مخاطب [توضیح] بنویس:
+1) 3 موضوع ایمیل (Subject) با ایموجی A/B تست
+2) پیش‌نمایش (Preheader) 40 کاراکتر
+3) بدنه ایمیل (ساختار: سلام + ارزش + CTA) 150 کلمه
+4) CTA دکمه (2 کلمه)
+5) زمان پیشنهادی ارسال + سگمنت پیشنهادی`
+},
+{
+id:8, name:"Agent 08 — تحلیل‌گر داده", role:"Data & Analytics Agent", accent:"#06b6d4", bg:"#0a2e3a", icon:"📊",
+tags:["GA4","سرچ کنسول","داشبورد","گزارش"],
+desc:"چشم و مغز داده‌محور تیم. همه چیز را اندازه می‌گیرد و می‌گوید چه چیزی کار می‌کند.",
+kpis:["دقت دیتا","سرعت گزارش‌دهی","کشف Insight","پیش‌بینی"],
+tasks:{
+  main:["نصب و نگهداری GA4، Tag Manager، پیکسل‌ها و Conversion Tracking","ساخت داشبورد Looker Studio برای هر کانال + داشبورد مدیریتی","تحلیل قیف تبدیل و نقاط ریزش (Drop-off)","گزارش هفتگی/ماهانه با Insight و پیشنهاد عملی","پیش‌بینی فروش بر اساس ترند","تشخیص ناهنجاری (Anomaly Detection)"],
+  daily:["چک کردن دیتای دیروز و هشدار در صورت افت ترافیک/تبدیل"],
+  weekly:["گزارش هفتگی با 3 Insight + 3 پیشنهاد"],
+  monthly:["گزارش ماهانه کامل + داشبورد مدیریتی برای ایجنت 01"],
+  inputs:["دیتا از همه ایجنت‌ها، GA4، سرچ کنسول، Ads، سوشال"],
+  outputs:["داشبورد، گزارش، هشدار، پیشنهاد بهینه‌سازی"],
+  tools:["GA4","Google Tag Manager","Looker Studio","Google Sheets","Search Console"],
+  collab:"به همه ایجنت‌ها دیتا می‌دهد و استراتژی ایجنت 01 را با عدد می‌سازد."
+},
+prompt:`تو Agent 08 - تحلیل‌گر داده هستی.
+این دیتا را تحلیل کن: [پیست کن: ترافیک، نرخ تبدیل، هزینه تبلیغ، فروش]
+خروجی: 1) 3 Insight کلیدی 2) 3 مشکل اصلی قیف 3) 3 پیشنهاد اولویت‌دار با تاثیر تخمینی 4) جدول KPI هفتگی پیشنهادی
+لحن: عدد محور، شفاف، قابل اجرا.`
+},
+{
+id:9, name:"Agent 09 — تحقیق بازار و رقبا", role:"Market Research Agent", accent:"#f43f5e", bg:"#3a0f1a", icon:"🕵️",
+tags:["رقبا","پرسونا","ترند","اینفلوئنسر"],
+desc:"جاسوس و دیده‌بان بازار. می‌داند رقبا چه می‌کنند، مشتری چه می‌خواهد و ترند بعدی چیست.",
+kpis:["تعداد Insight/ماه","دقت پیش‌بینی ترند","لیست فرصت‌ها"],
+tasks:{
+  main:["تحلیل 5 رقیب اصلی (سایت، سئو، سوشال، تبلیغات، قیمت‌گذاری)","ساخت و به‌روزرسانی پرسونای مشتری با مصاحبه و دیتا","شناسایی ترندهای بازار و کلمات در حال رشد","پیدا کردن اینفلوئنسرهای مرتبط + نرخ تعامل و قیمت","تحلیل نظرات مشتریان (Reviews) برای استخراج نیازها","گزارش فرصت‌های جدید (Gap Analysis)"],
+  daily:["رصد رقبا و ترندهای شبکه‌های اجتماعی"],
+  weekly:["گزارش 3 حرکت جدید رقبا + 2 فرصت"],
+  monthly:["گزارش جامع بازار + آپدیت پرسوناها + لیست 10 اینفلوئنسر پیشنهادی"],
+  inputs:["نام رقبا، دسترسی به سوشال و سایت رقبا، دیتای مشتری"],
+  outputs:["گزارش رقبا، پرسونای به‌روز، لیست ترند، لیست اینفلوئنسر"],
+  tools:["Similarweb","SEMrush","Google Trends","Social Blade","Perplexity"],
+  collab:"خوراک اصلی ایجنت 01 (استراتژی)، 02 (سئو) و 04 (سوشال) را تامین می‌کند."
+},
+prompt:`تو Agent 09 - محقق بازار هستی.
+برای کسب‌وکار [حوزه] با رقبای [نام 3 رقیب] تحلیل کن:
+1) جدول مقایسه (قیمت، کانال اصلی، نقطه قوت/ضعف، استراتژی محتوا)
+2) 3 Gap (چیزی که رقبا ندارند و ما می‌توانیم داشته باشیم)
+3) پرسونای مشتری (سن، درد، انگیزه، کانال)
+4) 5 ترند رو به رشد در 3 ماه آینده
+5) 5 اینفلوئنسر پیشنهادی با دلیل`
+},
+{
+id:10, name:"Agent 10 — بهینه‌سازی تبدیل", role:"CRO & UX Agent", accent:"#22c55e", bg:"#0f2f1a", icon:"🧪",
+tags:["لندینگ","A/B تست","قیف فروش","UX"],
+desc:"مسئول پول درآوردن از ترافیکی که بقیه آورده‌اند. هر بازدید را به لید/فروش تبدیل می‌کند.",
+kpis:["نرخ تبدیل","میانگین سبد خرید","نرخ رها کردن سبد","زمان تا تبدیل"],
+tasks:{
+  main:["تحلیل رفتار کاربر (Heatmap، Session Replay) و پیدا کردن نقاط اصطکاک","طراحی و بهینه‌سازی لندینگ پیج و صفحات محصول","A/B تست هدلاین، CTA، فرم، قیمت‌گذاری","بهینه‌سازی چک‌اوت و فرم‌ها (کاهش فیلد، اعتمادسازی)","پیشنهاد شخصی‌سازی (Personalization) بر اساس سگمنت","همکاری با ایجنت 06 برای طراحی نسخه‌های تست"],
+  daily:["چک کردن نرخ تبدیل دیروز و نرخ رها کردن سبد"],
+  weekly:["1 A/B تست جدید + گزارش تست قبلی"],
+  monthly:["گزارش CRO + نقشه حرارتی + 3 پیشنهاد بزرگ برای ماه بعد"],
+  inputs:["دیتا از 08، ترافیک از 02/04/05، طرح از 06"],
+  outputs:["لندینگ بهینه، گزارش A/B تست، چک‌لیست UX"],
+  tools:["Hotjar / Clarity","Google Optimize","Figma","GA4"],
+  collab:"خروجی‌اش مستقیما درآمد را بالا می‌برد و با 05 (تبلیغ) و 08 (دیتا) تنگاتنگ کار می‌کند."
+},
+prompt:`تو Agent 10 - متخصص CRO هستی.
+این صفحه را تحلیل کن: [آدرس صفحه یا توضیح] با نرخ تبدیل فعلی [عدد] و هدف [خرید/لید]
+بده: 1) 5 مشکل UX/UI 2) 3 پیشنهاد A/B تست اولویت‌دار (فرضیه + تغییر + متریک) 3) وایرفریم متنی لندینگ جدید (Hero + مزایا + اعتماد + CTA) 4) 3 عنصر اعتمادساز پیشنهادی`
+}
+];
+
+const grid=document.getElementById('grid');
+const sel=document.getElementById('agentSelect');
+agents.forEach(a=>{
+  const card=document.createElement('div');
+  card.className='card';
+  card.style.setProperty('--accent',a.accent);
+  card.onclick=()=>openModal(a.id);
+  card.innerHTML=`
+    <div class="card-head">
+      <div class="icon" style="background:${a.bg};border:1px solid ${a.accent}">${a.icon}</div>
+      <div>
+        <h3>${a.name}</h3>
+        <small>${a.role}</small>
+      </div>
+    </div>
+    <div>${a.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    <p>${a.desc}</p>
+    <div class="kpi">${a.kpis.map(k=>`<span>📌 ${k}</span>`).join('')}</div>
+    <button class="btn" style="background:${a.accent};color:${a.id===5?'#000':'#fff'}">مشاهده وظایف کامل + پرامپت →</button>
+  `;
+  grid.appendChild(card);
+  const opt=document.createElement('option');
+  opt.value=a.id; opt.textContent=a.name;
+  sel.appendChild(opt);
+});
+
+function openModal(id){
+  const a=agents.find(x=>x.id===id);
+  document.getElementById('mTitle').innerHTML=`<span style="color:${a.accent}">${a.icon} ${a.name}</span> <small style="color:#888;font-weight:400">— ${a.role}</small>`;
+  document.getElementById('mTitle').style.borderRight=`3px solid ${a.accent}`;
+  const t=a.tasks;
+  document.getElementById('mBody').innerHTML=`
+    <div class="section"><h4 style="color:${a.accent};border-color:${a.accent}">🎯 ماموریت اصلی</h4><p style="font-size:13px;color:#ddd;line-height:1.8">${a.desc}</p></div>
+    <div class="section"><h4>✅ وظایف کلیدی (Core)</h4><ul>${t.main.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    <div class="two">
+      <div class="section"><h4>📅 روزانه</h4><ul>${t.daily.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div class="section"><h4>📆 هفتگی</h4><ul>${t.weekly.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    </div>
+    <div class="section"><h4>🗓 ماهانه</h4><ul>${t.monthly.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    <div class="section"><h4>📥 ورودی‌ها</h4><p style="font-size:12px;color:#aaa;background:#0a0a1a;padding:10px;border-radius:10px;border:1px solid #222">${t.inputs}</p></div>
+    <div class="section"><h4>📤 خروجی‌ها</h4><p style="font-size:12px;color:#aaa;background:#0a0a1a;padding:10px;border-radius:10px;border:1px solid #222">${t.outputs}</p></div>
+    <div class="section"><h4>🛠 ابزارها</h4><p style="font-size:12px;color:#ccc">${t.tools.join(' • ')}</p></div>
+    <div class="section"><h4>🤝 همکاری</h4><p style="font-size:12px;color:#b8b8d8;background:rgba(124,108,255,0.08);padding:10px;border-radius:10px;border:1px solid #2a2a4a">${t.collab}</p></div>
+    <div class="section"><h4>📌 KPI ها</h4><div class="kpi">${a.kpis.map(k=>`<span style="border-color:${a.accent}">${k}</span>`).join('')}</div></div>
+    <div class="section">
+      <h4>🤖 پرامپت آماده (کپی کن و در ChatGPT/Claude استفاده کن)</h4>
+      <div class="prompt-box" style="border-color:${a.accent}"><button class="copy" onclick="copyPrompt(this)">کپی</button>${a.prompt}</div>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('active');
+  document.documentElement.style.setProperty('--accent',a.accent);
+}
+function closeModal(){document.getElementById('modal').classList.remove('active')}
+function copyPrompt(btn){
+  const text=btn.parentElement.innerText.replace('کپی','').trim();
+  navigator.clipboard.writeText(text);
+  btn.textContent='✅ کپی شد!'; setTimeout(()=>btn.textContent='کپی',1500);
+}
+
+// Chat simulation
+const chat=document.getElementById('chat');
+const input=document.getElementById('userInput');
+function clearChat(){chat.innerHTML='<div class="msg bot">چت پاک شد. دوباره یک ایجنت انتخاب کن و دستور بده.</div>'}
+function sendMsg(){
+  const txt=input.value.trim(); if(!txt) return;
+  const id=parseInt(sel.value); const a=agents.find(x=>x.id===id);
+  chat.innerHTML+=`<div class="msg user">${txt}</div>`;
+  input.value='';
+  setTimeout(()=>{
+    const reply=generateReply(a,txt);
+    chat.innerHTML+=`<div class="msg bot"><b>${a.icon} ${a.name}:</b><br>${reply}</div>`;
+    chat.scrollTop=chat.scrollHeight;
+  },600);
+  chat.scrollTop=chat.scrollHeight;
+}
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
+
+function generateReply(a,txt){
+  const templates={
+    1:`دریافت شد ✅<br>بر اساس درخواستت «<i>${txt}</i>» من به عنوان استراتژیست، این نقشه راه ۳ مرحله‌ای را پیشنهاد می‌دهم:<br>1) <b>هفته 1-2:</b> تحقیق و پرسوناسازی (همکاری با ایجنت 09)<br>2) <b>هفته 3-8:</b> رشد ترافیک (سئو + محتوا + تبلیغ تست با بودجه 30%)<br>3) <b>هفته 9-12:</b> اسکیل کمپین‌های برنده + اتوماسیون ایمیل<br>بودجه پیشنهادی: 40% Ads، 25% Content/SEO، 15% Social، 10% Email، 10% CRO<br>بگو حوزه کسب‌وکارت چیه تا همین الان سند استراتژی کامل 90 روزه‌ات رو بنویسم.`,
+    2:`عالی! من سئوکار تیم هستم.<br>برای «<i>${txt}</i>» این کار را می‌کنم:<br>• 20 کلمه کلیدی مرتبط استخراج می‌کنم<br>• ساختار H1-H3 + متا تایتل/دیسکریپشن می‌نویسم<br>• چک‌لیست تکنیکال (سرعت، اسکیما، لینک داخلی) می‌دهم<br>آدرس سایتت رو بفرست تا همین الان کیورد ریسرچ واقعی انجام بدم.`,
+    3:`باشه! من نویسنده‌ات هستم ✍️<br>برای «<i>${txt}</i>» آماده‌ام تحویل بدهم:<br>• مقاله 1500 کلمه‌ای سئو شده<br>• 3 کپشن و 1 سناریو ریلز 30 ثانیه‌ای با هوک قوی<br>• 3 هدلاین A/B تست<br>لحن برندت رو بگو (صمیمی/رسمی/طنز) تا همین الان بنویسم.`,
+    4:`حله 📱<br>برای «<i>${txt}</i>» تقویم 7 روزه می‌سازم + 3 ایده وایرال.<br>بگو پلتفرم اصلیت اینستاگرامه یا لینکدین؟ همین الان تقویم با ساعت دقیق انتشار به وقت آلمان می‌دم.`,
+    5:`ایول! من متخصص تبلیغاتم 💸<br>برای «<i>${txt}</i>» کمپین Google + Meta طراحی می‌کنم: ساختار کمپین، هدلاین‌ها، مخاطب، بودجه روزانه و ریتارگتینگ 7/30 روزه.<br>بودجه ماهانه‌ات چقدره؟ بگو تا همین الان کمپین رو ببندم.`,
+    6:`عالیه 🎨<br>برای «<i>${txt}</i>» کانسپت بصری + پالت رنگ + 3 ایده پست (کاروسل/ریلز/استوری) + پرامپت Midjourney می‌سازم.<br>سبک مورد علاقه‌ات چیه؟ مینیمال، لوکس یا فان و رنگی؟`,
+    7:`دریافت شد ✉️<br>برای «<i>${txt}</i>» قیف ایمیل می‌نویسم: 3 موضوع A/B تست + بدنه 150 کلمه‌ای + CTA + زمان ارسال.<br>لیست ایمیلت چند نفره‌ست و هدفت فروشه یا لید؟`,
+    8:`من تحلیل‌گرم 📊<br>برای «<i>${txt}</i>» داشبورد Looker Studio + تحلیل قیف + 3 Insight و 3 پیشنهاد اولویت‌دار می‌دم.<br>اگر دیتای GA4 یا فروش داری پیست کن تا همین الان تحلیل کنم.`,
+    9:`حله 🕵️<br>برای «<i>${txt}</i>» رقبا رو کالبدشکافی می‌کنم: جدول مقایسه + 3 Gap + پرسونا + 5 ترند + 5 اینفلوئنسر.<br>نام 3 رقیب اصلیت رو بگو.`,
+    10:`من CRO هستم 🧪<br>برای «<i>${txt}</i>» صفحه‌ات رو تحلیل می‌کنم: 5 مشکل UX + 3 تست A/B اولویت‌دار + وایرفریم لندینگ جدید.<br>آدرس صفحه‌ات رو بفرست تا همین الان نسخه بهینه رو طراحی کنم.`
+  };
+  return templates[a.id] || `دریافت شد! من ${a.name} هستم و برای «${txt}» همین الان اقدام می‌کنم. جزئیات بیشتری بده تا خروجی کامل تحویل بدم.`;
+}
+// init
+sel.value=1;
+</script>
+</body>
+</html>

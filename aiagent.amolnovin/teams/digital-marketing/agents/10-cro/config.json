@@ -1,0 +1,13 @@
+{
+  "id": "10-cro",
+  "name": "Agent 10 — بهینه‌سازی تبدیل",
+  "icon": "🧪",
+  "color": "#22c55e",
+  "model_recommended": "claude-3.5-sonnet",
+  "temperature": 0.6,
+  "top_p": 0.9,
+  "max_tokens": 4000,
+  "language": "fa",
+  "created": "2026-09-08",
+  "usage": "Copy system_prompt.txt into Custom GPT / Claude Project / Gemini Gem"
+}

@@ -1,0 +1,20 @@
+# وابستگی‌ها و بیلد
+/node_modules
+/vendor
+/public/hot
+/public/assets/manifest.json
+/public/assets/js/chunks
+
+# لاگ و فایل‌های موقت
+*.log
+.DS_Store
+Thumbs.db
+
+# بک‌آپ و Patchهای اعمال‌شده (در سرور ساخته می‌شوند، در مخزن نیستند)
+/public/patches/*.zip
+/public/patches/backups
+
+# محیط توسعه
+.env
+.env.*
+!.env.example

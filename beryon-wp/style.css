@@ -1,0 +1,24 @@
+/*
+Theme Name:  Beryon | بریون — قالب شرکت بریان گوشت آمل
+Theme URI:   https://beryon.com/
+Author:      Beryon Web Team (codex · themos · wooger · securx)
+Author URI:  https://beryon.com/
+Description: قالب اختصاصی، سریع، ریسپانسیو و کاملاً RTL شرکت بریان گوشت آمل (برند بریون) بر پایه فریم‌ورک Sage 11 (Blade + Vite). معرفی شرکت و کاتالوگ محصولات با سازگاری کامل ووکامرس (حالت کاتالوگ/استعلام قیمت)، سئوی پیشرفته با اسکیما و سایت‌맵 داخلی، پنل تنظیمات قالب، بهینه‌سازی DOM با اسپرایت SVG، تصاویر WebP و سیستم به‌روزرسانی امن از طریق Patch.
+Version:     1.0.3
+Requires at least: 6.4
+Tested up to: 6.7
+Requires PHP: 7.4
+License:     GNU General Public License v3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: beryon
+Domain Path: /resources/lang
+Tags: rtl-language-support, custom-menu, custom-logo, featured-images, theme-options, translation-ready, woocommerce, blog, one-column, two-columns
+*/
+
+/*
+ * این فایل فقط «شناسنامه قالب» است (هدر استاندارد وردپرس).
+ * تمام استایل‌های سایت در مسیر زیر نگهداری و با Vite بیلد می‌شوند:
+ *   resources/css/beryon.css  →  public/assets/app.css
+ *   resources/css/app.css     →  لایه ورودی (فونت خودمیمان + ویرایشگر + پرینت)
+ * برای توسعه: npm install && npm run build  (یا npm run dev برای watch)
+ */

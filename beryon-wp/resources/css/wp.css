@@ -1,0 +1,82 @@
+/*
+ * wp.css — استایل بخش‌هایی که در قالب وردپرس افزوده شده‌اند
+ * ==================================================================
+ * این فایل «فقط» برای بخش‌هایی است که در سایت HTML وجود نداشتند و در
+ * وردپرس لازم می‌شوند (صفحه‌بندی، فرم جست‌وجوی سرور-محور، هانی‌پات،
+ * پیام‌های ارسال فرم، صفحه‌های ووکامرس). هیچ‌کدام از این قوانین روی
+ * مارک‌آپ ۱۸ صفحه قالب HTML اثر نمی‌گذارند؛ همه با متغیرهای همان
+ * طراحی سیستم (--brand ، --line ، --radius و…) نوشته شده‌اند.
+ */
+
+/* ---------- الف) هانی‌پات ضدربات (بدون اثر بصری) ---------- */
+.hp-field{position:absolute !important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;left:-9999px;top:-9999px}
+.hp-field input{opacity:0}
+
+/* ---------- ب) فرم جست‌وجوی سرور-محور (صفحه جست‌وجو و ۴۰۴) ---------- */
+.search-form{display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:230px;align-items:center}
+.search-form input[type="search"]{flex:1;min-width:200px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px 16px;font-size:.9rem;font-family:inherit;color:var(--ink);transition:all var(--trans)}
+.search-form input[type="search"]:focus{border-color:var(--brand);background:#fff;outline:none;box-shadow:0 0 0 4px rgba(213,35,44,.1)}
+.search-form .btn{white-space:nowrap}
+
+/* ---------- ج) چیپ‌های لینک‌دار (دسته‌بندی مطالب وبلاگ) ---------- */
+.chip[data-href]{cursor:pointer}
+.chip[data-href]:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+a.chip{text-decoration:none;color:inherit}
+
+/* ---------- د) صفحه‌بندی وردپرس با زبان بصری قالب ---------- */
+.pagination{display:flex;justify-content:center;margin-top:44px}
+.pagination ul{display:flex;gap:8px;flex-wrap:wrap;list-style:none;margin:0;padding:0}
+.pagination li{margin:0}
+.pagination .page-numbers{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:44px;padding:0 15px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink-2);font-weight:700;font-size:.9rem;text-decoration:none;transition:all var(--trans)}
+.pagination .page-numbers:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-2px)}
+.pagination .page-numbers.current{background:linear-gradient(135deg,var(--brand),var(--brand-2));border-color:transparent;color:#fff;box-shadow:0 8px 18px rgba(213,35,44,.28)}
+.pagination .page-numbers.dots{border-color:transparent;background:transparent;color:var(--muted)}
+.pagination svg{width:16px;height:16px}
+
+/* ---------- ه) پیام‌های ارسال فرم (REST) ---------- */
+.form-note{display:none;margin-top:14px;padding:12px 16px;border-radius:12px;font-size:.86rem;font-weight:700;border:1px solid transparent}
+.form-note.show{display:block}
+.form-note.is-error{background:var(--brand-soft);border-color:rgba(213,35,44,.28);color:var(--brand-2)}
+.form-note.is-ok{background:rgba(30,158,85,.1);border-color:rgba(30,158,85,.3);color:#146c3b}
+.form-note[role="alert"]:focus{outline:2px solid var(--brand);outline-offset:2px}
+.form-card .btn[disabled],.btn.is-loading{opacity:.65;cursor:progress}
+
+/* ---------- و) صفحه‌های ووکامرس (در صورت فعال بودن فروشگاه) ---------- */
+.woocommerce .shop_table,.woocommerce form.checkout,.woocommerce .woocommerce-MyAccount-content{font-family:var(--font);color:var(--ink)}
+.woocommerce table.shop_table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+.woocommerce table.shop_table th,.woocommerce table.shop_table td{padding:14px 16px;border-bottom:1px solid var(--line);text-align:start;font-size:.9rem}
+.woocommerce table.shop_table th{background:var(--bg);font-weight:800;color:var(--ink-2)}
+.woocommerce .button,.woocommerce button.button,.woocommerce input.button,.woocommerce a.button{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border:none;border-radius:12px;padding:12px 22px;font-weight:800;font-family:inherit;cursor:pointer;transition:all var(--trans)}
+.woocommerce .button:hover,.woocommerce button.button:hover,.woocommerce a.button:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(213,35,44,.3)}
+.woocommerce-message,.woocommerce-info,.woocommerce-error{background:#fff;border:1px solid var(--line);border-inline-start:4px solid var(--brand);border-radius:12px;padding:14px 18px;margin-bottom:18px;list-style:none}
+.woocommerce-MyAccount-navigation ul{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px;padding:0}
+.woocommerce-MyAccount-navigation a{display:inline-block;padding:9px 18px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-weight:700;font-size:.84rem;color:var(--ink-2);text-decoration:none}
+.woocommerce-MyAccount-navigation li.is-active a{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border-color:transparent}
+.woocommerce .quantity input.qty{width:74px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center;font-family:inherit}
+
+/* ---------- ز) ویرایشگر بلوکی (سبک‌های پایه برای نویسنده) ---------- */
+.editor-styles-wrapper,.block-editor-block-list__layout{font-family:var(--font);color:var(--ink);direction:rtl}
+.editor-styles-wrapper h2,.editor-styles-wrapper h3{font-weight:800;line-height:1.9}
+.editor-styles-wrapper a{color:var(--brand)}
+
+/* ---------- ح) دسترس‌پذیری و حرکت ---------- */
+@media (prefers-reduced-motion:reduce){
+  .pagination .page-numbers:hover{transform:none}
+  .woocommerce .button:hover{transform:none}
+}
+
+@media (max-width:570px){
+  .search-form{flex-direction:column;align-items:stretch}
+  .search-form .btn{width:100%}
+  .pagination .page-numbers{min-width:40px;height:40px;padding:0 12px;font-size:.84rem}
+}
+
+/* ---------- ط) بازخورد لود تصویر و کپی لینک (از app.js) ---------- */
+img.is-loaded{animation:beryon-fade .45s ease both}
+@keyframes beryon-fade{from{opacity:.35}to{opacity:1}}
+.share-row a.is-copied{color:var(--green)}
+.share-row a.is-copied svg{animation:beryon-pop .35s ease}
+@keyframes beryon-pop{50%{transform:scale(1.22)}}
+@media (prefers-reduced-motion:reduce){
+  img.is-loaded,.share-row a.is-copied svg{animation:none}
+}

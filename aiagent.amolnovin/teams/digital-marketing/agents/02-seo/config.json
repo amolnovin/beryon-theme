@@ -1,0 +1,13 @@
+{
+  "id": "02-seo",
+  "name": "Agent 02 — متخصص سئو",
+  "icon": "🔍",
+  "color": "#00e5ff",
+  "model_recommended": "gpt-4o",
+  "temperature": 0.3,
+  "top_p": 0.9,
+  "max_tokens": 4000,
+  "language": "fa",
+  "created": "2026-09-08",
+  "usage": "Copy system_prompt.txt into Custom GPT / Claude Project / Gemini Gem"
+}

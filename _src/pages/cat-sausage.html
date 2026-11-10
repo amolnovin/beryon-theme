@@ -1,0 +1,52 @@
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="مسیر صفحه">
+        <a href="index.html">خانه</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <a href="products.html">محصولات</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span>سوسیس، هات‌داگ و کوکتل</span>
+      </nav>
+      <h1>سوسیس، هات‌داگ و کوکتل بریون</h1>
+      <p>انواع سوسیس کوکتل، هات‌داگ، بلغاری و پنیری با درصد گوشت ۴۰ تا ۷۰؛ پخته‌شده با تکنولوژی روز و بدون مواد نگهدارنده مصنوعی، مناسب خانواده و فودسرویس.</p>
+    </div>
+    <span class="ribbon-deco" aria-hidden="true"></span>
+  </section>
+
+  <section class="section" style="padding-top:56px">
+    <div class="container" data-filter-wrap>
+      <div class="filter-bar reveal">
+        <div class="filter-chips" role="group" aria-label="فیلتر نوع محصول">
+          <button class="chip active" data-filter="all">همه</button>
+          <button class="chip" data-filter="cocktail">کوکتل</button>
+          <button class="chip" data-filter="hotdog">هات‌داگ</button>
+          <button class="chip" data-filter="paniri">پنیری</button>
+          <button class="chip" data-filter="bulghari">بلغاری</button>
+        </div>
+        <label class="filter-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" data-search placeholder="جست‌وجو در سوسیس‌ها…" aria-label="جست‌وجو در سوسیس‌ها">
+        </label>
+        <span class="filter-count" data-count-label></span>
+      </div>
+      <h2 class="sr-only">فهرست سوسیس، هات‌داگ و کوکتل بریون</h2>
+      <div class="grid products-grid" data-product-grid>{{GRID:sausage}}</div>
+      <div class="no-result">محصولی مطابق فیلتر شما یافت نشد.</div>
+
+      <div class="sec-head reveal" style="margin:64px auto 40px">
+        <span class="ribbon-tag">گروه‌های دیگر</span>
+        <h2>سایر دسته‌بندی‌های بریون</h2>
+        <span class="underline"></span>
+      </div>
+      <div class="grid cats-grid">{{OTHER_CATS:sausage}}</div>
+
+      <div class="seo-text">
+        <h2>سوسیس و هات‌داگ بریون؛ انتخابی برای هر سلیقه</h2>
+        <p>سوسیس‌های بریون در چهار خانواده کوکتل، هات‌داگ، سوسیس بلغاری و سوسیس‌های پنیری تولید می‌شوند. کوکتل‌ها با وزن حدود ۵۰ گرم برای فینگرفود و پیتزا ایده‌آل‌اند؛ هات‌داگ‌های ۵۵ و ۷۰ درصد برای ساندویچ‌های گرم و فست‌فود؛ و سوسیس بلغاری با بافت منسجم و ادویه‌های مخصوص، طعمی نوستالژیک دارد.</p>
+        <h3>شرایط نگهداری</h3>
+        <p>محصولات سوسیس بریون در دمای ۱ تا ۴ درجه سانتی‌گراد تا ۴۵ روز پس از تولید قابل نگهداری هستند و در بسته‌بندی وکیوم یا توری یک کیلوگرمی عرضه می‌شوند.</p>
+      </div>
+    </div>
+  </section>
+</main>

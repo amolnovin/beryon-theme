@@ -1,0 +1,51 @@
+====================================================================
+MANIFEST — تیم ۶ نفره مدیریت اینستاگرام
+====================================================================
+نسخه              : 1.0.0
+تاریخ ساخت        : 2026-09-13
+تاریخ دانش الگوریتم: 2026-09-13 (راستی‌آزمایی‌شده)
+زبان              : فارسی (fa)
+تعداد فایل        : 19
+حجم کل            : 177,910 بایت (174 KB)
+
+--------------------------------------------------------------------
+مسیر                                                      بایت  sha256[:12]
+--------------------------------------------------------------------
+ACTIVATE.md                                             22,817  b6fd479eaa7b
+INSTALL.md                                               7,672  41d6e659c695
+README.md                                                9,495  4c091c39fdd7
+00-knowledge-base/benchmarks.md                          7,607  a3b685973e19
+00-knowledge-base/instagram-algorithm-2026.md           16,416  89813f4f9b9d
+00-knowledge-base/myths.md                               4,843  f0aedefba1aa
+01-agents/agent-1-radin-algorithm.md                     4,133  8d38e7cdeefd
+01-agents/agent-2-sarina-strategy.md                     4,244  8faee45934c8
+01-agents/agent-3-arman-ideation.md                      5,915  f7ef058549e5
+01-agents/agent-4-niki-script.md                         5,956  74b120f4efe2
+01-agents/agent-5-mehrad-calendar.md                     5,531  46b9f2d24b25
+01-agents/agent-6-daniel-analytics.md                    6,409  be19fa3bac03
+02-templates/audit-checklist.md                          6,611  35fb17571193
+02-templates/brief-intake.md                             4,635  10753997ab4c
+02-templates/hooks-cta-bank.md                           8,013  a749e2294921
+02-templates/scenario-formats.md                         8,461  d8025e5aa05e
+03-deliverables/content-calendar.xlsx                   27,755  e68ae9fb6514
+04-pages/page-registry.md                                4,502  7ea9355b893e
+05-demo/full-pipeline-demo.md                           16,895  6844d4c2a1a6
+--------------------------------------------------------------------
+
+راهنمای نصب: INSTALL.md
+فعال‌سازی  : ACTIVATE.md  ← متن داخل جعبه را کپی و در چت جدید پیست کنید
+اتاق فرمان : README.md
+
+منابع دانش:
+  • Instagram, «Instagram Ranking Explained» (2023-05-31)
+  • Instagram, «How Instagram Search Works» (2021-08-25)
+  • Adam Mosseri, ranking video series (2025-01-22)
+  • Adam Mosseri, AI-authenticity message (2026-01-05)
+  • Meta/creators@instagram: hashtag cap 5 (2025-12-18),
+    Your Algorithm (2025-12-10), Teen Accounts 13+ (2025-10-14),
+    Reposts (2025-08-06)
+  • Instagram Creators Blog: originality rules (2026-04-30)
+  • Google Search Console platform properties (2026-07-07 / 2026-07-29)
+  • Keywords Everywhere, «Instagram Algorithm Updates: Confirmed
+    Changes, Ranking Signals and Debunks» (updated 2026-09-11,
+    checked 2026-09-13)

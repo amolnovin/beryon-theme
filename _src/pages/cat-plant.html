@@ -1,0 +1,47 @@
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="مسیر صفحه">
+        <a href="index.html">خانه</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <a href="products.html">محصولات</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span>محصولات گیاهی</span>
+      </nav>
+      <h1>محصولات گیاهی بریون</h1>
+      <p>سوسیس، کالباس و هات‌داگ گیاهی بر پایه پروتئین سویا و سبزیجات تازه؛ بدون گوشت، کم‌کالری و سرشار از فیبر، مناسب گیاهخواران و رژیم‌های سالم.</p>
+    </div>
+    <span class="ribbon-deco" aria-hidden="true"></span>
+  </section>
+
+  <section class="section" style="padding-top:56px">
+    <div class="container" data-filter-wrap>
+      <div class="filter-bar reveal">
+        <div class="filter-chips" role="group" aria-label="فیلتر نوع محصول گیاهی">
+          <button class="chip active" data-filter="all">همه</button>
+          <button class="chip" data-filter="sausage">سوسیس گیاهی</button>
+          <button class="chip" data-filter="kalbas">کالباس گیاهی</button>
+          <button class="chip" data-filter="hotdog">هات‌داگ گیاهی</button>
+        </div>
+        <span class="filter-count" data-count-label></span>
+      </div>
+      <h2 class="sr-only">فهرست محصولات گیاهی بریون</h2>
+      <div class="grid products-grid" data-product-grid>{{GRID:plant}}</div>
+      <div class="no-result">محصولی مطابق فیلتر شما یافت نشد.</div>
+
+      <div class="sec-head reveal" style="margin:64px auto 40px">
+        <span class="ribbon-tag">گروه‌های دیگر</span>
+        <h2>سایر دسته‌بندی‌های بریون</h2>
+        <span class="underline"></span>
+      </div>
+      <div class="grid cats-grid">{{OTHER_CATS:plant}}</div>
+
+      <div class="seo-text">
+        <h2>محصولات گیاهی بریون؛ طعم آشنا، بدون گوشت</h2>
+        <p>خط محصولات گیاهی بریون با پایه پروتئین بافت‌دار سویا، قارچ، هویج و فلفل دلمه‌ای تولید می‌شود و بافت و طعمی نزدیک به فرآورده‌های گوشتی دارد. این محصولات فاقد کلسترول و چربی اشباع حیوانی هستند و گزینه‌ای مناسب برای گیاهخواران، روزهای بدون گوشت و برنامه‌های تغذیه سالم به شمار می‌روند.</p>
+        <h3>تنوع خانواده گیاهی</h3>
+        <p>سوسیس گیاهی، سوسیس گیاهی کوکتل، هات‌داگ گیاهی، کالباس گیاهی، کالباس گیاهی اسلایس‌شده و کالباس گیاهی خانواده با قارچ و هویج و فلفل دلمه‌ای.</p>
+      </div>
+    </div>
+  </section>
+</main>

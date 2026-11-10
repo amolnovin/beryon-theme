@@ -1,0 +1,51 @@
+<main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="مسیر صفحه">
+        <a href="index.html">خانه</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <a href="products.html">محصولات</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span>کالباس</span>
+      </nav>
+      <h1>کالباس بریون</h1>
+      <p>انواع کالباس گوشت قرمز، مرغ، پپرونی، مارتادلا و خشک ممتاز با درصد گوشت ۴۰ تا ۹۰؛ در بسته‌بندی‌های خانوادگی و فروشگاهی.</p>
+    </div>
+    <span class="ribbon-deco" aria-hidden="true"></span>
+  </section>
+
+  <section class="section" style="padding-top:56px">
+    <div class="container" data-filter-wrap>
+      <div class="filter-bar reveal">
+        <div class="filter-chips" role="group" aria-label="فیلتر نوع کالباس">
+          <button class="chip active" data-filter="all">همه</button>
+          <button class="chip" data-filter="family">بسته خانواده</button>
+          <button class="chip" data-filter="pepperoni">پپرونی</button>
+          <button class="chip" data-filter="dry">خشک</button>
+        </div>
+        <label class="filter-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" data-search placeholder="جست‌وجو در کالباس‌ها…" aria-label="جست‌وجو در کالباس‌ها">
+        </label>
+        <span class="filter-count" data-count-label></span>
+      </div>
+      <h2 class="sr-only">فهرست کالباس‌های بریون</h2>
+      <div class="grid products-grid" data-product-grid>{{GRID:kalbas}}</div>
+      <div class="no-result">محصولی مطابق فیلتر شما یافت نشد.</div>
+
+      <div class="sec-head reveal" style="margin:64px auto 40px">
+        <span class="ribbon-tag">گروه‌های دیگر</span>
+        <h2>سایر دسته‌بندی‌های بریون</h2>
+        <span class="underline"></span>
+      </div>
+      <div class="grid cats-grid">{{OTHER_CATS:kalbas}}</div>
+
+      <div class="seo-text">
+        <h2>کالباس بریون؛ از اقتصادی تا پریمیوم</h2>
+        <p>سبد کالباس بریون شامل کالباس فیله گوشت ۹۰ درصد، خشک ممتاز ۷۰ درصد، پپرونی، مارتادلا، کالباس‌های مرغ ۴۰ و ۶۰ درصد و نسخه‌های خانواده است. همه محصولات با گوشت تازه کشتار روز و ادویه‌های طبیعی تولید و درصد گوشت هر محصول روی بسته‌بندی درج می‌شود.</p>
+        <h3>پیشنهاد مصرف</h3>
+        <p>کالباس‌های خشک و پپرونی برای ساندویچ سرد و پذیرایی، کالباس‌های قارچ‌دار (کرات) برای پیتزا و اسنک گرم، و کالباس‌های خانواده برای مصرف روزمره اقتصادی مناسب‌اند.</p>
+      </div>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,162 @@
+/*
+ * admin.css — استایل پنل «تنظیمات قالب بریون»
+ * ==================================================================
+ * فقط در صفحه‌های پنل قالب بارگذاری می‌شود؛ هیچ اثری روی ظاهر سایت ندارد.
+ * زبان بصری همان توکن‌های قالب (--brand ، --line ، --radius) است تا پنل
+ * با هویت برند بریون هم‌خوان بماند. راست‌چین (dir="rtl") است.
+ */
+
+.beryon-wrap{
+  --brand:#d5232c;
+  --brand-2:#a4121b;
+  --brand-soft:#fdeceb;
+  --ink:#181a1e;
+  --ink-2:#3f424a;
+  --muted:#6a6e77;
+  --line:#e3e5ea;
+  --soft:#f7f8fa;
+  --green:#1e9e55;
+  --radius:14px;
+  --trans:.22s ease;
+  max-width:1160px;
+  margin-top:18px;
+  color:var(--ink);
+  font-family:'Vazirmatn',-apple-system,BlinkMacSystemFont,'Segoe UI',Tahoma,sans-serif;
+}
+
+/* ---------- سربرگ ---------- */
+.beryon-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;box-shadow:0 6px 20px rgba(24,26,30,.05);margin-bottom:18px}
+.beryon-head-logo{width:54px;height:54px;border-radius:12px;background:var(--brand-soft);display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+.beryon-head-logo img{max-width:100%;max-height:100%;object-fit:contain}
+.beryon-head h1{margin:0;font-size:1.35rem;font-weight:800;line-height:1.7;color:var(--ink)}
+.beryon-head .beryon-muted{margin:2px 0 0;font-size:.85rem}
+.beryon-plan{margin-inline-start:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- نشان‌ها ---------- */
+.beryon-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:.76rem;font-weight:700;border:1px solid var(--line);background:var(--soft);color:var(--ink-2)}
+.beryon-badge.ok{background:rgba(30,158,85,.1);border-color:rgba(30,158,85,.3);color:#146c3b}
+.beryon-badge.err{background:var(--brand-soft);border-color:rgba(213,35,44,.28);color:var(--brand-2)}
+.beryon-badge.off{background:#f1f2f4;color:var(--muted)}
+
+/* ---------- تب‌ها ---------- */
+.beryon-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;padding:0}
+.beryon-tab{display:inline-block;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-2);font-weight:700;font-size:.84rem;text-decoration:none;transition:all var(--trans)}
+.beryon-tab:hover{border-color:var(--brand);color:var(--brand)}
+.beryon-tab:focus{outline:2px solid var(--brand);outline-offset:2px}
+.beryon-tab.is-active{background:linear-gradient(135deg,var(--brand),var(--brand-2));border-color:transparent;color:#fff;box-shadow:0 8px 18px rgba(213,35,44,.26)}
+
+/* ---------- کارت‌ها ---------- */
+.beryon-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px;box-shadow:0 6px 20px rgba(24,26,30,.04)}
+.beryon-card--inline{padding:16px 20px}
+.beryon-card-title{margin:0 0 6px;font-size:1.05rem;font-weight:800;color:var(--ink)}
+.beryon-intro{margin:0 0 18px;color:var(--muted);font-size:.88rem;line-height:2}
+.beryon-muted{color:var(--muted)}
+.beryon-card .form-table{margin-top:0}
+.beryon-card .form-table th{width:230px;padding:16px 10px 16px 0;font-weight:700;color:var(--ink-2)}
+.beryon-card .form-table td{padding:14px 10px}
+.beryon-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px}
+.beryon-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.beryon-footer-note{margin-top:18px;color:var(--muted);font-size:.82rem;line-height:2}
+
+/* ---------- فیلدها ---------- */
+.beryon-field{margin-bottom:6px}
+.beryon-field-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.beryon-field-control input[type="text"],.beryon-field-control input[type="url"],.beryon-field-control input[type="email"],.beryon-field-control input[type="number"],.beryon-field-control textarea,.beryon-field-control select{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:.9rem;background:#fff;color:var(--ink);transition:border-color var(--trans),box-shadow var(--trans)}
+.beryon-field-control input:focus,.beryon-field-control textarea:focus,.beryon-field-control select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(213,35,44,.12);outline:none}
+.beryon-field-control textarea{min-height:96px;line-height:2;resize:vertical}
+.beryon-field .description{margin-top:6px;color:var(--muted);font-size:.8rem;line-height:1.9}
+
+/* کلید/سوئیچ */
+.beryon-switch{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer}
+.beryon-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.beryon-switch span{width:46px;height:26px;border-radius:999px;background:#d9dce2;position:relative;transition:background var(--trans);flex:0 0 auto}
+.beryon-switch span::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.22);transition:transform var(--trans)}
+.beryon-switch input:checked + span{background:linear-gradient(135deg,var(--brand),var(--brand-2))}
+.beryon-switch input:checked + span::after{transform:translateX(-20px)}
+[dir="rtl"] .beryon-switch input:checked + span::after{transform:translateX(20px)}
+.beryon-switch input:focus-visible + span{outline:2px solid var(--brand);outline-offset:3px}
+
+/* رنگ */
+.beryon-color{width:52px;height:38px;padding:2px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+.beryon-color-text{display:inline-block;min-width:110px;margin-inline-start:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem}
+
+/* رسانه */
+.beryon-media{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.beryon-media-preview{width:150px;height:110px;border:1px dashed var(--line);border-radius:12px;background:var(--soft);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:.8rem;flex:0 0 auto}
+.beryon-media-preview img{max-width:100%;max-height:100%;object-fit:cover}
+.beryon-media-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- ردیف‌ساز (Repeater) ---------- */
+.beryon-repeater{border:1px solid var(--line);border-radius:12px;background:var(--soft);padding:14px}
+.beryon-repeater-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.beryon-repeater-rows{display:flex;flex-direction:column;gap:10px}
+.beryon-repeater-row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.beryon-repeater-row .beryon-field{margin-bottom:0}
+.beryon-row-number{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--brand-soft);color:var(--brand-2);font-weight:800;font-size:.8rem}
+.beryon-repeater-row [data-row-remove]{align-self:start;color:var(--brand-2)}
+.beryon-repeater-row [data-row-remove]:hover{text-decoration:underline}
+
+/* ---------- نتیجه AJAX / کد ---------- */
+.beryon-result{margin-top:14px;border-radius:12px;padding:14px 16px;border:1px solid var(--line);background:var(--soft)}
+.beryon-result.is-ok{background:rgba(30,158,85,.08);border-color:rgba(30,158,85,.3)}
+.beryon-result.is-error{background:var(--brand-soft);border-color:rgba(213,35,44,.28)}
+.beryon-code{margin:0;padding:0;background:transparent;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;line-height:2;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.beryon-history{margin-top:14px}
+
+/* ---------- جدول‌ها ---------- */
+.beryon-table{border-radius:12px;overflow:hidden}
+.beryon-table th{width:220px;font-weight:700;color:var(--ink-2)}
+
+/* ---------- دکمه‌ها ---------- */
+.beryon-wrap .button,.beryon-wrap .button-primary{border-radius:10px;font-weight:700;font-family:inherit;padding:6px 16px;min-height:36px}
+.beryon-wrap .button-primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));border-color:transparent;box-shadow:0 6px 16px rgba(213,35,44,.24)}
+.beryon-wrap .button-primary:hover{filter:brightness(1.06)}
+.beryon-wrap .button.is-busy,.beryon-wrap [data-loading][disabled]{opacity:.65;cursor:progress}
+
+/* ---------- فرم درون‌خطی (عملیات سریع) ---------- */
+.beryon-inline-form{display:inline-flex;gap:8px;align-items:center;margin:0}
+
+/* ---------- کارت‌های آمار (صندوق پیام‌ها) ---------- */
+.beryon-stat-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.beryon-stat{display:flex;flex-direction:column;gap:4px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:0 6px 20px rgba(24,26,30,.04)}
+.beryon-stat strong{font-size:1.35rem;font-weight:800;line-height:1.5;color:var(--ink)}
+.beryon-stat span{font-size:.8rem;font-weight:700;color:var(--muted)}
+.beryon-stat--warn{border-color:rgba(245,179,1,.5);background:linear-gradient(180deg,#fffaf0,#fff)}
+.beryon-stat--warn strong{color:#a8730a}
+.beryon-stat--ok{border-color:rgba(30,158,85,.34);background:linear-gradient(180deg,#f2fbf6,#fff)}
+.beryon-stat--ok strong{color:#146c3b}
+.beryon-stat--brand{border-color:rgba(213,35,44,.3);background:linear-gradient(180deg,var(--brand-soft),#fff)}
+.beryon-stat--brand strong{color:var(--brand-2)}
+
+/* ---------- نوار فیلتر ---------- */
+.beryon-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:18px;box-shadow:0 6px 20px rgba(24,26,30,.04)}
+.beryon-filters input[type="search"],.beryon-filters select{min-width:170px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-family:inherit;font-size:.88rem}
+.beryon-filters input[type="search"]{flex:1 1 240px}
+.beryon-filters input:focus,.beryon-filters select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(213,35,44,.12);outline:none}
+.beryon-filters .button{border-radius:10px;margin:0}
+
+/* ---------- فرم‌های پنل ---------- */
+.beryon-form{margin:0}
+#beryon-submissions-form .tablenav{margin-bottom:8px}
+#beryon-submissions-form .widefat td,#beryon-submissions-form .widefat th{vertical-align:middle}
+
+/* ---------- واکنش‌گرایی پنل ---------- */
+@media screen and (max-width:960px){
+  .beryon-grid-2{grid-template-columns:1fr}
+  .beryon-stat-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .beryon-card .form-table th{width:auto;display:block;padding-bottom:4px}
+  .beryon-head{padding:16px}
+  .beryon-plan{margin-inline-start:0;width:100%}
+}
+
+@media screen and (max-width:600px){
+  .beryon-card{padding:16px}
+  .beryon-stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .beryon-filters input[type="search"],.beryon-filters select{min-width:0;width:100%}
+  .beryon-repeater-row{grid-template-columns:1fr}
+  .beryon-media-preview{width:100%;height:130px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .beryon-wrap *{transition:none !important}
+}
