@@ -460,7 +460,7 @@ final class Security
         }
 
         $files = array_merge((array) ($alert['modified'] ?? []), (array) ($alert['missing'] ?? []));
-        $url   = \admin_url('themes.php?page=beryon-updates');
+        $url   = \admin_url('admin.php?page=beryon-updates');
 
         echo '<div class="notice notice-error"><p dir="rtl"><strong>' .
             esc_html__('هشدار امنیتی قالب بریون:', BERYON_TD) . '</strong> ' .

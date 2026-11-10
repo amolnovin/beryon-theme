@@ -166,7 +166,61 @@ final class Forms
 
         $schema['type']['required'] = true;
 
+        // «انواع فروش» چک‌باکس چندگزینه‌ای است (name="sales_types[]") و به‌صورت آرایه
+        // می‌رسد؛ طرح تک‌مقداری بالا آن را با خطای ۴۰۰ رد می‌کرد و فرم نمایندگی
+        // هرگز ثبت نمی‌شد.
+        $schema['sales_types'] = [
+            'required'          => false,
+            'validate_callback' => static function ($value): bool {
+                if (is_string($value) || is_numeric($value)) {
+                    return true;
+                }
+
+                if (! is_array($value) || count($value) > 30) {
+                    return false;
+                }
+
+                foreach ($value as $item) {
+                    if (! is_string($item) && ! is_numeric($item)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+            'sanitize_callback' => [self::class, 'sanitize_choices'],
+        ];
+
         return $schema;
+    }
+
+    /**
+     * پاک‌سازی فیلد چندگزینه‌ای: رشته یا آرایه‌ای از رشته‌ها → یک رشته «الف، ب».
+     *
+     * @param mixed $value مقدار خام
+     * @return string
+     */
+    public static function sanitize_choices($value): string
+    {
+        if (! is_array($value)) {
+            return is_scalar($value) ? \sanitize_text_field((string) $value) : '';
+        }
+
+        $items = [];
+
+        foreach ($value as $item) {
+            if (! is_scalar($item)) {
+                continue;
+            }
+
+            $item = trim(\sanitize_text_field((string) $item));
+
+            if ($item !== '' && ! in_array($item, $items, true)) {
+                $items[] = $item;
+            }
+        }
+
+        return implode('، ', $items);
     }
 
     /**
@@ -277,7 +331,8 @@ final class Forms
         $message = \wp_strip_all_tags($message);
         $message = \mb_substr(trim($message), 0, (int) Settings::opt('forms.max_message_length', 4000));
 
-        $sales_types = (string) $request->get_param('sales_types');
+        // رشته یا آرایه (چک‌باکس چندگزینه‌ای)؛ همیشه به یک رشته خوانا تبدیل می‌شود.
+        $sales_types = self::sanitize_choices($request->get_param('sales_types'));
 
         $data = [
             'name'    => $name,

@@ -259,6 +259,20 @@ final class SettingsSchema
                     continue;
                 }
 
+                // نوع فیلد از نوع مقدار پیش‌فرض گرفته می‌شود تا با ذخیره، true به «1»
+                // یا عدد به رشته تبدیل نشود.
+                if (is_bool($value) || is_int($value)) {
+                    $fields[] = [
+                        'group' => $group,
+                        'name'  => $name,
+                        'label' => $label,
+                        'type'  => is_bool($value) ? 'checkbox' : 'number',
+                        'help'  => $help,
+                    ];
+
+                    continue;
+                }
+
                 $text  = (string) $value;
                 $multi = mb_strlen($text) > 90 || strpos($text, $newline) !== false;
 
@@ -546,7 +560,7 @@ final class SettingsSchema
             ['group' => 'org', 'name' => 'root_name', 'label' => \__('نام ریشه', BERYON_TD), 'type' => 'text'],
             ['group' => 'org', 'name' => 'units', 'label' => \__('واحدهای سازمانی', BERYON_TD), 'type' => 'repeater', 'max' => 12, 'row' => [
                 ['name' => 'title', 'label' => \__('واحد', BERYON_TD), 'type' => 'text'],
-                ['name' => 'children', 'label' => \__('زیرواحدها (هر مورد در یک خط)', BERYON_TD), 'type' => 'textarea'],
+                ['name' => 'children', 'label' => \__('زیرواحدها (هر خط یک مورد؛ توضیح اختیاری پس از «|»)', BERYON_TD), 'type' => 'sublist'],
             ]],
             ['group' => 'org', 'name' => 'duties_tag', 'label' => \__('برچسب شرح وظایف', BERYON_TD), 'type' => 'text'],
             ['group' => 'org', 'name' => 'duties_title', 'label' => \__('عنوان شرح وظایف', BERYON_TD), 'type' => 'text'],

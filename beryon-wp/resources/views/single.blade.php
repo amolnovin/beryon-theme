@@ -25,7 +25,7 @@
         ['label' => beryon_excerpt_text(get_the_title(), 40)],
       ]])
       <h1>{{ get_the_title() }}</h1>
-      <p>{{ beryon_excerpt_text(wp_strip_all_tags((string) get_post_field('post_excerpt', $post_id) ?: get_post_field('post_content', $post_id)), 130) }}</p>
+      <p>{{ post_password_required($post_id) ? '' : beryon_excerpt_text(wp_strip_all_tags((string) get_post_field('post_excerpt', $post_id) ?: get_post_field('post_content', $post_id)), 130) }}</p>
     </div>
     <span class="ribbon-deco" aria-hidden="true"></span>
   </section>
@@ -35,7 +35,7 @@
       <div class="post-layout">
         <article class="post-card">
 @if (! empty($post_data['image']))
-          <div class="cover"><img src="{{ esc_url($post_data['image']) }}" alt="{{ $post_data['alt'] }}"></div>
+          <div class="cover"><img src="{{ esc_url(beryon_img((string) $post_data['image'])) }}" alt="{{ $post_data['alt'] }}"></div>
 @endif
           <div class="post-body">
             <div class="post-meta">
@@ -57,7 +57,7 @@
           <div class="side-box">
             <h3>{{ beryon_opt('blog.sidebar_latest') }}</h3>
 @foreach ($latest as $item)
-            <div class="mini-post"><img src="{{ esc_url($item['image']) }}" alt="" loading="lazy"><div><a href="{{ esc_url($item['link']) }}">{{ beryon_excerpt_text($item['title'], 52) }}</a><small>{{ $item['date'] }}</small></div></div>
+            <div class="mini-post">@if ((string) $item['image'] !== '')<img src="{{ esc_url(beryon_img((string) $item['image'])) }}" alt="" loading="lazy">@endif<div><a href="{{ esc_url($item['link']) }}">{{ beryon_excerpt_text($item['title'], 52) }}</a><small>{{ $item['date'] }}</small></div></div>
 @endforeach
           </div>
 @endif

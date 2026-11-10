@@ -160,7 +160,7 @@ if (preg_match('/^Version:\s*(.+)$/mi', $beryon_style_head, $beryon_version_matc
     $beryon_version_match = '';
 }
 
-define('BERYON_VERSION', $beryon_version_match !== '' ? $beryon_version_match : '1.0.3');
+define('BERYON_VERSION', $beryon_version_match !== '' ? $beryon_version_match : '1.0.4');
 unset($beryon_style_head, $beryon_version_match);
 
 /** دامنه متنی */
@@ -304,19 +304,45 @@ add_action(
         if (function_exists('flush_rewrite_rules')) {
             flush_rewrite_rules();
         }
+
+        // پیام خوش‌آمدگویی در نخستین بارگذاری پیشخوان پس از همین فعال‌سازی نمایش داده می‌شود.
+        update_option('beryon_welcome', 'pending', true);
     }
 );
 
 /**
- * پیام خوش‌آمدگویی پس از فعال‌سازی قالب (یک بار).
+ * پیام خوش‌آمدگویی پس از فعال‌سازی قالب (یک بار برای هر فعال‌سازی).
+ *
+ * وضعیت در Option «beryon_welcome» است: هنگام فعال‌سازی «pending» می‌شود و با
+ * چاپ پیام به شماره نسخه تغییر می‌کند. سایتی که قالب را فقط به‌روزرسانی می‌کند
+ * (بدون فعال‌سازی دوباره) پیام «فعال شد» نمی‌بیند.
+ *
+ * پیش‌تر پرچم یک Transient هفتگی بود (هر هفته دوباره اجرا می‌شد) و متد
+ * SettingsPage::welcome_notice وجود نداشت؛ در PHP 8 همین هوک نخستین بارگذاری
+ * پیشخوان را با خطای مرگبار متوقف می‌کرد.
  */
 add_action(
-    'admin_init',
+    'admin_notices',
     /** @return void */
     static function () {
-        if (! get_transient('beryon_welcome_shown') && current_user_can('manage_options')) {
-            set_transient('beryon_welcome_shown', 1, WEEK_IN_SECONDS);
-            add_action('admin_notices', [App\Admin\SettingsPage::class, 'welcome_notice']);
+        $beryon_welcome = get_option('beryon_welcome');
+
+        if ($beryon_welcome === false) {
+            // نصب قدیمی (پیش از ۱.۰.۴): Option ساخته می‌شود تا در هر بارگذاری پیشخوان
+            // برای کلید ناموجود کوئری زده نشود.
+            add_option('beryon_welcome', 'none', '', true);
+
+            return;
+        }
+
+        if ($beryon_welcome !== 'pending' || ! current_user_can('manage_options')) {
+            return;
+        }
+
+        update_option('beryon_welcome', BERYON_VERSION, true);
+
+        if (is_callable([App\Admin\SettingsPage::class, 'welcome_notice'])) {
+            App\Admin\SettingsPage::welcome_notice();
         }
     }
 );

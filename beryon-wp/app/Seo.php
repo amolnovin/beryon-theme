@@ -33,7 +33,11 @@ final class Seo
     public static function boot(): void
     {
         \add_action('init', [self::class, 'rewrite_rules']);
-        \add_action('template_redirect', [self::class, 'maybe_sitemap']);
+        \add_filter('query_vars', [self::class, 'query_vars']);
+        // اولویت ۰: پیش از redirect_canonical هسته (اولویت ۱۰) که نشانی سایت‌مپ را
+        // به صفحه اصلی ریدایرکت می‌کرد.
+        \add_action('template_redirect', [self::class, 'maybe_sitemap'], 0);
+        \add_action('update_option_' . Settings::OPTION_KEY, [self::class, 'maybe_reset_rewrites'], 10, 2);
 
         if (self::plugin_active()) {
             return; // افزونه سئو فعال است؛ فقط اسکیما و سایت‌مپ اختیاری می‌ماند.
@@ -243,7 +247,9 @@ final class Seo
             if ($description === '') {
                 $post = \get_post($id);
 
-                if ($post instanceof \WP_Post) {
+                // نوشته رمزدار: چکیده و متن آن نباید در متای صفحه (description، Open Graph
+                // و JSON-LD) فاش شود؛ توضیح عمومی سایت جایگزین می‌شود.
+                if ($post instanceof \WP_Post && ! \post_password_required($post)) {
                     $description = $post->post_excerpt !== ''
                         ? \beryon_excerpt_text($post->post_excerpt, 165)
                         : \beryon_excerpt_text((string) $post->post_content, 165);
@@ -902,11 +908,63 @@ final class Seo
             return;
         }
 
-        $slug = (string) Settings::opt('seo.sitemap_slug', 'sitemap.xml');
+        $slug = trim((string) Settings::opt('seo.sitemap_slug', 'sitemap.xml'), "/ \t\n\r");
 
-        \add_rewrite_rule('^' . preg_quote($slug, '/') . '?$', 'index.php?beryon_sitemap=1', 'top');
-        \add_rewrite_rule('^' . preg_quote($slug, '/') . '/([0-9]+)/?$', 'index.php?beryon_sitemap=1&beryon_sitemap_page=$matches[1]', 'top');
+        if ($slug === '') {
+            $slug = 'sitemap.xml';
+        }
 
+        // «/?$»: اسلش پایانی اختیاری است (پیش‌تر «?$» آخرین حرف اسلاگ را اختیاری می‌کرد).
+        // جداکننده «#» همان است که WP_Rewrite برای تطبیق قواعد به‌کار می‌برد.
+        $pattern = preg_quote($slug, '#');
+
+        \add_rewrite_rule('^' . $pattern . '/?$', 'index.php?beryon_sitemap=1', 'top');
+        \add_rewrite_rule('^' . $pattern . '/([0-9]+)/?$', 'index.php?beryon_sitemap=1&beryon_sitemap_page=$matches[1]', 'top');
+    }
+
+    /**
+     * معرفی متغیرهای پرس‌وجوی سایت‌مپ به وردپرس.
+     *
+     * بدون این ثبت، وردپرس متغیرهای قاعده بازنویسی را دور می‌ریزد و
+     * get_query_var('beryon_sitemap') همیشه خالی می‌ماند.
+     *
+     * @param mixed $vars متغیرهای عمومی
+     * @return array<int,string>
+     */
+    public static function query_vars($vars): array
+    {
+        $vars = is_array($vars) ? $vars : [];
+
+        foreach (['beryon_sitemap', 'beryon_sitemap_page'] as $var) {
+            if (! in_array($var, $vars, true)) {
+                $vars[] = $var;
+            }
+        }
+
+        return $vars;
+    }
+
+    /**
+     * با تغییر نشانی یا وضعیت سایت‌مپ در تنظیمات، قواعد بازنویسی باید از نو ساخته شوند.
+     * حذف گزینه rewrite_rules باعث می‌شود وردپرس در درخواست بعدی (با تنظیمات تازه)
+     * آن‌ها را بازسازی کند.
+     *
+     * @param mixed $old مقدار پیشین تنظیمات
+     * @param mixed $new مقدار تازه تنظیمات
+     * @return void
+     */
+    public static function maybe_reset_rewrites($old, $new): void
+    {
+        $old = is_array($old) && is_array($old['seo'] ?? null) ? $old['seo'] : [];
+        $new = is_array($new) && is_array($new['seo'] ?? null) ? $new['seo'] : [];
+
+        $enabled_changed = (bool) ($old['sitemap_enabled'] ?? true) !== (bool) ($new['sitemap_enabled'] ?? true);
+        $old_slug        = is_scalar($old['sitemap_slug'] ?? null) ? (string) $old['sitemap_slug'] : '';
+        $new_slug        = is_scalar($new['sitemap_slug'] ?? null) ? (string) $new['sitemap_slug'] : '';
+
+        if ($enabled_changed || $old_slug !== $new_slug) {
+            \delete_option('rewrite_rules');
+        }
     }
 
     /**
@@ -926,6 +984,7 @@ final class Seo
 
         $page = max(1, (int) \get_query_var('beryon_sitemap_page', 1));
 
+        \status_header(200);
         \nocache_headers();
         \header('Content-Type: application/xml; charset=UTF-8');
         \header('X-Robots-Tag: noindex');

@@ -70,7 +70,9 @@ final class Jalali
     /**
      * قالب‌بندی یک timestamp به شمسی.
      *
-     * پشتیبانی از: Y y m n d j F M (خطا/جداکننده‌ها عیناً چاپ می‌شوند)
+     * پشتیبانی از: Y y m n d j F M برای تاریخ و H G i s برای ساعت (به وقت سایت)؛
+     * سایر نویسه‌ها و جداکننده‌ها عیناً چاپ می‌شوند. پیش‌تر نویسه‌های ساعت پشتیبانی
+     * نمی‌شد و قالب «Y/m/d H:i» در پنل به‌صورت «۱۴۰۵/۰۸/۱۹ H:i» چاپ می‌شد.
      *
      * @param string|int|null $timestamp timestamp (پیش‌فرض: الان)
      * @param string          $format    قالب، پیش‌فرض Y/m/d
@@ -117,6 +119,12 @@ final class Jalali
                 case 'M':
                     $out .= mb_substr(self::MONTHS[$j['jm'] - 1] ?? '', 0, 6);
                     break;
+                case 'H':
+                case 'G':
+                case 'i':
+                case 's':
+                    $out .= self::digits(self::localTime($char, $timestamp));
+                    break;
                 case '\\':
                     $out .= $format[++$i] ?? '';
                     break;
@@ -160,6 +168,26 @@ final class Jalali
     private static function digits(string $value): string
     {
         return \function_exists('beryon_fa') ? beryon_fa($value) : $value;
+    }
+
+    /**
+     * یک جزء ساعت (H، G، i یا s) به وقت منطقه زمانی وردپرس.
+     *
+     * @param string $char      نویسه قالب
+     * @param int    $timestamp timestamp یونیکس
+     * @return string
+     */
+    private static function localTime(string $char, int $timestamp): string
+    {
+        if (\function_exists('wp_date')) {
+            $value = wp_date($char, $timestamp);
+
+            if (is_string($value)) {
+                return $value;
+            }
+        }
+
+        return gmdate($char, $timestamp);
     }
 
     /**

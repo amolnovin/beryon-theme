@@ -340,7 +340,7 @@ final class Cli
                     'user'    => 'wp-cli',
                 ]);
 
-                foreach ((array) ($result['plan'] ?? []) as $row) {
+                foreach ((array) ($result['plan']['rows'] ?? []) as $row) {
                     \WP_CLI::line(sprintf('  %-7s %s', (string) ($row['op'] ?? ''), (string) ($row['path'] ?? '')));
                 }
 
@@ -410,6 +410,11 @@ final class Cli
             case 'rollback':
                 if ($file === '') {
                     \WP_CLI::error('نام فایل پشتیبان را وارد کنید.');
+                }
+
+                // «patch backups» فقط نام فایل را نشان می‌دهد؛ نامِ تنها در پوشه پشتیبان‌ها جست‌وجو می‌شود.
+                if (! is_readable($file)) {
+                    $file = PatchApplier::backups_dir() . '/' . basename($file);
                 }
 
                 \WP_CLI::confirm('بازگردانی این پشتیبان؟', $assoc_args);

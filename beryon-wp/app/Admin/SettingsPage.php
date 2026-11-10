@@ -156,6 +156,33 @@ final class SettingsPage
     }
 
     /**
+     * پیام خوش‌آمدگویی پس از فعال‌سازی قالب (یک بار؛ از functions.php صدا زده می‌شود).
+     *
+     * @return void
+     */
+    public static function welcome_notice(): void
+    {
+        $links = [
+            \admin_url('admin.php?page=' . self::PAGE_SLUG) => \__('تنظیمات قالب', BERYON_TD),
+            \admin_url('admin.php?page=beryon-tools')       => \__('درج داده‌های نمونه', BERYON_TD),
+            \admin_url('admin.php?page=beryon-docs')        => \__('راهنما', BERYON_TD),
+        ];
+
+        $html = [];
+
+        foreach ($links as $url => $label) {
+            $html[] = '<a href="' . esc_url($url) . '">' . esc_html($label) . '</a>';
+        }
+
+        echo '<div class="notice notice-success is-dismissible"><p><strong>'
+            . esc_html(\sprintf(\__('قالب بریون %s فعال شد.', BERYON_TD), BERYON_VERSION))
+            . '</strong> '
+            . esc_html__('برای شروع، متن‌ها و اطلاعات تماس را در تنظیمات قالب بازبینی کنید و در صورت نیاز داده‌های نمونه را درج کنید:', BERYON_TD)
+            . ' ' . implode(' | ', $html) // phpcs:ignore WordPress.Security.EscapeOutput -- اجزا پیش‌تر escape شده‌اند
+            . '</p></div>';
+    }
+
+    /**
      * ثبت تنظیمات.
      *
      * @return void
@@ -171,21 +198,37 @@ final class SettingsPage
     }
 
     /**
-     * پاک‌سازی کل ورودی فرم بر اساس نوع هر فیلد.
+     * پاک‌سازی ورودی بر اساس نوع هر فیلد.
+     *
+     * دو حالت دارد:
+     *  - ارسال فرم پنل (options.php): فرم فقط فیلدهای «برگه فعال» را می‌فرستد؛
+     *    پس مقادیر ذخیره‌شده پایه قرار می‌گیرند و تنها فیلدهای حاضر در ورودی
+     *    جایگزین می‌شوند. کلیدهای بیرون از طرح (schema) نادیده گرفته می‌شوند.
+     *  - ذخیره برنامه‌ای (update_option از کد دیگر): ورودی مقدار کامل Option است؛
+     *    همان پایه می‌شود و فیلدهای طرح فقط نرمال می‌شوند.
+     *
+     * پیش‌تر نتیجه از روی کل طرح بازسازی می‌شد؛ در نتیجه ذخیره یک برگه، همه
+     * فیلدهای برگه‌های دیگر را خالی می‌کرد.
      *
      * @param mixed $input ورودی
      * @return array<string,mixed>
      */
     public static function sanitize($input): array
     {
-        $input    = is_array($input) ? $input : [];
-        $stored   = (array) \get_option(self::OPTION, []);
-        $defaults = Settings::defaults();
-        $result   = [];
-        $schema   = self::schema();
+        $stored = \get_option(self::OPTION, []);
+        $stored = is_array($stored) ? $stored : [];
 
-        foreach ($schema as $tab) {
-            foreach ((array) $tab['fields'] as $field) {
+        // ورودی غیرآرایه (درخواست دست‌کاری‌شده یا خطای کدنویسی) هرگز نباید
+        // تنظیمات موجود را پاک کند.
+        if (! is_array($input)) {
+            return $stored;
+        }
+
+        $defaults = Settings::defaults();
+        $result   = self::is_form_submission() ? $stored : $input;
+
+        foreach (self::schema() as $tab) {
+            foreach ((array) ($tab['fields'] ?? []) as $field) {
                 $group = (string) ($field['group'] ?? '');
                 $name  = (string) ($field['name'] ?? '');
 
@@ -195,13 +238,21 @@ final class SettingsPage
                     continue;
                 }
 
-                $type  = (string) ($field['type'] ?? 'text');
-                $raw   = $input[$group][$name] ?? null;
+                // گروه طرح باید آرایه باشد؛ مقدار ناسازگار کنار گذاشته می‌شود.
+                if (isset($result[$group]) && ! is_array($result[$group])) {
+                    unset($result[$group]);
+                }
 
-                $fallback = $stored[$group][$name] ?? ($defaults[$group][$name] ?? null);
-                $value    = self::sanitize_field($raw, $type, $field, $fallback);
+                // فیلدی که در ورودی نیست دست‌نخورده می‌ماند.
+                if (! isset($input[$group]) || ! is_array($input[$group]) || ! array_key_exists($name, $input[$group])) {
+                    continue;
+                }
 
-                $result[$group][$name] = $value;
+                $type         = (string) ($field['type'] ?? 'text');
+                $stored_group = isset($stored[$group]) && is_array($stored[$group]) ? $stored[$group] : [];
+                $fallback     = $stored_group[$name] ?? ($defaults[$group][$name] ?? null);
+
+                $result[$group][$name] = self::sanitize_field($input[$group][$name], $type, $field, $fallback);
             }
         }
 
@@ -213,26 +264,49 @@ final class SettingsPage
          */
         $result = (array) \apply_filters('beryon/settings/sanitize', $result, $input);
 
-        // پاک‌سازی حافظه‌های نهان وابسته
-        \add_action('shutdown', static function (): void {
-            Settings::flush();
-            Seo::flush_sitemap();
-            Assets::flush_image_cache();
+        // پاک‌سازی حافظه‌های نهان وابسته (یک بار در هر درخواست)
+        static $flush_scheduled = false;
 
-            if (\class_exists('\App\Products')) {
-                \App\Products::flush_cache();
-            }
+        if (! $flush_scheduled) {
+            $flush_scheduled = true;
 
-            if (\function_exists('wp_cache_flush')) {
-                \wp_cache_flush();
-            }
-        });
+            \add_action('shutdown', static function (): void {
+                Settings::flush();
+                Seo::flush_sitemap();
+                Assets::flush_image_cache();
+
+                if (\class_exists('\App\Products')) {
+                    \App\Products::flush_cache();
+                }
+
+                if (\function_exists('wp_cache_flush')) {
+                    \wp_cache_flush();
+                }
+            });
+        }
 
         return $result;
     }
 
     /**
+     * آیا این درخواست، ارسال فرم همین پنل از طریق options.php است؟
+     *
+     * @return bool
+     */
+    private static function is_form_submission(): bool
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce را options.php پیش از update_option بررسی می‌کند
+        $page = isset($_POST['option_page']) && is_string($_POST['option_page']) ? \sanitize_key(\wp_unslash($_POST['option_page'])) : '';
+
+        return $page === self::GROUP;
+    }
+
+    /**
      * پاک‌سازی یک فیلد.
+     *
+     * همه شاخه‌ها روی مقدار «از پیش پاک‌سازی‌شده» هم همان نتیجه را می‌دهند
+     * (idempotent)؛ چون وردپرس در نخستین ذخیره، sanitize را دو بار صدا می‌زند
+     * (update_option → add_option) و ذخیره برنامه‌ای مقدار ساخت‌یافته می‌دهد.
      *
      * @param mixed                $raw      مقدار خام
      * @param string               $type     نوع
@@ -242,10 +316,24 @@ final class SettingsPage
      */
     private static function sanitize_field($raw, string $type, array $field, $fallback)
     {
+        if (! is_scalar($raw) && ! is_array($raw)) {
+            $raw = null;
+        }
+
+        // فیلد تک‌مقداری با مقدار آرایه‌ای معتبر نیست؛ مقدار قبلی حفظ می‌شود
+        // (تبدیل آرایه به رشته، متن «Array» ذخیره می‌کرد).
+        if (is_array($raw) && ! in_array($type, ['tags', 'lines', 'list', 'repeater', 'sublist'], true)) {
+            return $fallback;
+        }
+
         switch ($type) {
             case 'checkbox':
             case 'switch':
-                return $raw === null ? (bool) $fallback : ($raw === '1' || $raw === 1 || $raw === true || $raw === 'on');
+                if ($raw === null) {
+                    return (bool) $fallback;
+                }
+
+                return in_array($raw, [true, 1, '1', 'on', 'true', 'yes'], true);
 
             case 'number':
             case 'int':
@@ -271,7 +359,7 @@ final class SettingsPage
                 return (string) \sanitize_hex_color((string) $raw) ?: (string) $fallback;
 
             case 'url':
-                return $raw === '' ? '' : (string) \esc_url_raw((string) $raw);
+                return (string) $raw === '' ? '' : (string) \esc_url_raw((string) $raw);
 
             case 'email':
                 return (string) \sanitize_email((string) $raw);
@@ -283,14 +371,19 @@ final class SettingsPage
 
             case 'textarea':
             case 'html':
-                return (string) \wp_kses_post((string) $raw);
+                // مرورگر متن چندخطی را با CRLF می‌فرستد؛ به LF یکدست می‌شود تا مقدار
+                // ذخیره‌شده با هر بار ذخیره تغییر نکند.
+                return (string) \wp_kses_post(str_replace(["\r\n", "\r"], "\n", (string) $raw));
 
             case 'tags':
             case 'lines':
-                return self::sanitize_list((string) $raw, "\n");
+                return self::sanitize_list($raw, "\n");
 
             case 'list':
-                return self::sanitize_list((string) $raw, ',');
+                return self::sanitize_list($raw, ',');
+
+            case 'sublist':
+                return self::sanitize_sublist($raw);
 
             case 'select':
                 $options = array_column((array) ($field['options'] ?? []), 'value');
@@ -300,18 +393,14 @@ final class SettingsPage
 
             case 'image':
             case 'media':
-                $id = (int) $raw;
-
-                return $id > 0 ? $id : (int) $fallback;
+            case 'file':
+            case 'attachment':
+                // مقدار خالی/صفر یعنی «بدون انتخاب» (دکمه «حذف» در پنل)؛ پیش‌تر به
+                // شناسه قبلی برمی‌گشت و تصویر انتخاب‌شده قابل حذف نبود.
+                return $raw === null ? (int) $fallback : max(0, (int) $raw);
 
             case 'repeater':
                 return self::sanitize_repeater($raw, $field, (array) $fallback);
-
-            case 'file':
-            case 'attachment':
-                $id = (int) $raw;
-
-                return $id > 0 ? $id : (int) $fallback;
 
             default:
                 return (string) \sanitize_text_field((string) $raw);
@@ -319,19 +408,31 @@ final class SettingsPage
     }
 
     /**
-     * تبدیل رشته چندخطی/جداشده به آرایه پاک‌سازی‌شده.
+     * تبدیل رشته چندخطی/جداشده (یا آرایه از پیش ساخت‌یافته) به آرایه پاک‌سازی‌شده.
      *
-     * @param string $raw       ورودی
-     * @param string $separator جداکننده
+     * @param mixed  $raw       ورودی (متن فرم یا آرایه)
+     * @param string $separator جداکننده («,» ویرگول فارسی «،» را هم می‌پذیرد)
      * @return array<int,string>
      */
-    private static function sanitize_list(string $raw, string $separator): array
+    private static function sanitize_list($raw, string $separator): array
     {
-        $parts = explode($separator, str_replace(["\r\n", "\r"], "\n", $raw));
-        $out   = [];
+        if (is_array($raw)) {
+            $parts = $raw;
+        } else {
+            $text  = str_replace(["\r\n", "\r"], "\n", is_scalar($raw) ? (string) $raw : '');
+            $parts = $separator === ','
+                ? (array) (preg_split('/[,،]/u', $text) ?: [])
+                : explode($separator, $text);
+        }
+
+        $out = [];
 
         foreach ($parts as $part) {
-            $part = trim((string) \sanitize_text_field($part));
+            if (! is_scalar($part)) {
+                continue;
+            }
+
+            $part = trim((string) \sanitize_text_field((string) $part));
 
             if ($part !== '') {
                 $out[] = $part;
@@ -339,6 +440,78 @@ final class SettingsPage
         }
 
         return array_values(array_slice($out, 0, 100));
+    }
+
+    /**
+     * فهرست «عنوان | توضیح» (هر خط یک مورد) ↔ آرایه [{title, sub}].
+     *
+     * برای زیرواحدهای چارت سازمانی (org.units.children): نما آرایه‌ای از
+     * {title, sub} می‌خواهد ولی فیلد پنل یک textarea ساده بود.
+     *
+     * @param mixed $raw متن چندخطی فرم یا آرایه از پیش ساخت‌یافته
+     * @return array<int,array{title:string,sub:string}>
+     */
+    private static function sanitize_sublist($raw): array
+    {
+        if (is_array($raw)) {
+            $items = $raw;
+        } else {
+            $items = explode("\n", str_replace(["\r\n", "\r"], "\n", is_scalar($raw) ? (string) $raw : ''));
+        }
+
+        $out = [];
+
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $title = is_scalar($item['title'] ?? null) ? (string) $item['title'] : '';
+                $sub   = is_scalar($item['sub'] ?? null) ? (string) $item['sub'] : '';
+            } elseif (is_scalar($item)) {
+                $parts = explode('|', (string) $item, 2);
+                $title = $parts[0];
+                $sub   = $parts[1] ?? '';
+            } else {
+                continue;
+            }
+
+            $title = trim((string) \sanitize_text_field($title));
+            $sub   = trim((string) \sanitize_text_field($sub));
+
+            if ($title !== '') {
+                $out[] = ['title' => $title, 'sub' => $sub];
+            }
+        }
+
+        return array_values(array_slice($out, 0, 30));
+    }
+
+    /**
+     * متن قابل ویرایش یک فهرست «عنوان | توضیح» (عکس sanitize_sublist).
+     *
+     * @param mixed $value مقدار ذخیره‌شده
+     * @return string
+     */
+    private static function sublist_text($value): string
+    {
+        if (! is_array($value)) {
+            return is_scalar($value) ? (string) $value : '';
+        }
+
+        $lines = [];
+
+        foreach ($value as $item) {
+            if (is_array($item)) {
+                $title = is_scalar($item['title'] ?? null) ? trim((string) $item['title']) : '';
+                $sub   = is_scalar($item['sub'] ?? null) ? trim((string) $item['sub']) : '';
+
+                if ($title !== '') {
+                    $lines[] = $sub !== '' ? $title . ' | ' . $sub : $title;
+                }
+            } elseif (is_scalar($item) && trim((string) $item) !== '') {
+                $lines[] = trim((string) $item);
+            }
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -597,11 +770,11 @@ final class SettingsPage
         } else {
             echo '<ol class="beryon-history">';
 
-            foreach (array_slice(array_reverse($history), 0, 12) as $row) {
+            // Updater::history() از پیش «جدیدترین نخست» است؛ هر رکورد version/time/note دارد.
+            foreach (array_slice($history, 0, 12) as $row) {
                 echo '<li><strong>' . esc_html((string) ($row['version'] ?? '')) . '</strong> — '
-                    . esc_html((string) ($row['label'] ?? '')) . ' <span class="beryon-muted">'
-                    . esc_html((string) \App\Jalali::format((int) ($row['time'] ?? 0), 'Y/m/d H:i')) . ' توسط '
-                    . esc_html((string) ($row['user'] ?? '—')) . '</span></li>';
+                    . esc_html((string) ($row['note'] ?? ($row['label'] ?? ''))) . ' <span class="beryon-muted">'
+                    . esc_html((string) \App\Jalali::format((int) ($row['time'] ?? 0), 'Y/m/d H:i')) . '</span></li>';
             }
 
             echo '</ol>';
@@ -620,10 +793,13 @@ final class SettingsPage
 
             foreach ($logs as $log) {
                 $ok = (bool) ($log['ok'] ?? false);
-                echo '<tr><td>' . esc_html((string) ($log['at'] ?? '')) . '</td>'
-                    . '<td><code>' . esc_html((string) ($log['event'] ?? '')) . '</code></td>'
+                // کلیدهای رکورد لاگ: time (یونیکس) و action (apply/dry_run/rollback/create)
+                $log_time = (int) ($log['time'] ?? 0);
+
+                echo '<tr><td>' . esc_html($log_time > 0 ? (string) \App\Jalali::format($log_time, 'Y/m/d H:i') : '—') . '</td>'
+                    . '<td><code>' . esc_html((string) ($log['action'] ?? '')) . '</code></td>'
                     . '<td>' . ($ok ? '<span class="beryon-badge ok">موفق</span>' : '<span class="beryon-badge err">ناموفق</span>') . '</td>'
-                    . '<td>' . esc_html((string) ($log['message'] ?? '')) . '</td></tr>';
+                    . '<td>' . esc_html((string) (($log['message'] ?? '') !== '' ? $log['message'] : ($log['error'] ?? ''))) . '</td></tr>';
             }
 
             echo '</tbody></table>';
@@ -861,6 +1037,9 @@ wp beryon integrity</pre>';
         switch ($type) {
             case 'checkbox':
             case 'switch':
+                // چک‌باکسِ بدون تیک در فرم HTML ارسال نمی‌شود؛ ورودی پنهان «0» پیش از
+                // آن می‌آید تا خاموش‌کردن کلید هم ذخیره شود (PHP آخرین مقدار را می‌گیرد).
+                echo '<input type="hidden" name="' . esc_attr($input_name) . '" value="0">';
                 echo '<label class="beryon-switch"><input type="checkbox" id="' . esc_attr($input_id) . '" name="' . esc_attr($input_name) . '" value="1"' . checked((bool) $value, true, false) . '><span></span></label>';
                 break;
 
@@ -1026,7 +1205,7 @@ wp beryon integrity</pre>';
     /**
      * یک ردیف از فیلد تکرارشونده.
      *
-     * @param string               $name   نام
+     * @param string               $name   نام کامل ورودی فیلد، مثال: beryon_theme_options[org][units]
      * @param int|string           $index  اندیس
      * @param array<string,mixed>  $row    مقدارها
      * @param array<int,mixed>     $schema طرح
@@ -1034,27 +1213,34 @@ wp beryon integrity</pre>';
      */
     private static function repeater_row(string $name, $index, array $row, array $schema): string
     {
-        $html = '<div class="beryon-repeater-row" data-row>';
+        $html   = '<div class="beryon-repeater-row" data-row>';
+        $prefix = trim((string) preg_replace('/[^A-Za-z0-9_]+/', '-', $name), '-');
 
         foreach ($schema as $sub) {
             $sub_name  = (string) $sub['name'];
             $sub_type  = (string) ($sub['type'] ?? 'text');
             $sub_value = $row[$sub_name] ?? ($sub['default'] ?? '');
-            $field_id  = 'beryon-' . $sub_name . '-' . (string) $index;
-            $input     = self::OPTION . '[' . $name . '][' . $index . '][' . $sub_name . ']';
+            $field_id  = $prefix . '-' . (string) $index . '-' . $sub_name;
+
+            // $name از پیش نام کامل ورودی است؛ پیش‌تر دوباره داخل نام Option پیچیده
+            // می‌شد (beryon_theme_options[beryon_theme_options[…]]…) و PHP آن را
+            // به کلیدی بی‌ربط تجزیه می‌کرد؛ در نتیجه ویرایش ردیف‌ها ذخیره نمی‌شد.
+            $input = $name . '[' . $index . '][' . $sub_name . ']';
 
             if ($sub_type === 'select') {
                 $html .= '<select name="' . esc_attr($input) . '" id="' . esc_attr($field_id) . '">';
 
                 foreach ((array) ($sub['options'] ?? []) as $opt_value => $opt_label) {
-                    $html .= '<option value="' . esc_attr((string) $opt_value) . '"' . selected((string) $sub_value, (string) $opt_value, false) . '>' . esc_html((string) $opt_label) . '</option>';
+                    $html .= '<option value="' . esc_attr((string) $opt_value) . '"' . selected(is_scalar($sub_value) ? (string) $sub_value : '', (string) $opt_value, false) . '>' . esc_html((string) $opt_label) . '</option>';
                 }
 
                 $html .= '</select>';
+            } elseif ($sub_type === 'sublist') {
+                $html .= '<textarea name="' . esc_attr($input) . '" id="' . esc_attr($field_id) . '" rows="3" dir="rtl">' . esc_textarea(self::sublist_text($sub_value)) . '</textarea>';
             } elseif ($sub_type === 'textarea') {
-                $html .= '<textarea name="' . esc_attr($input) . '" id="' . esc_attr($field_id) . '" rows="2" dir="rtl">' . esc_textarea((string) $sub_value) . '</textarea>';
+                $html .= '<textarea name="' . esc_attr($input) . '" id="' . esc_attr($field_id) . '" rows="2" dir="rtl">' . esc_textarea(is_scalar($sub_value) ? (string) $sub_value : '') . '</textarea>';
             } else {
-                $html .= '<input type="text" name="' . esc_attr($input) . '" id="' . esc_attr($field_id) . '" value="' . esc_attr((string) $sub_value) . '" dir="' . esc_attr((string) ($sub['dir'] ?? 'rtl')) . '">';
+                $html .= '<input type="text" name="' . esc_attr($input) . '" id="' . esc_attr($field_id) . '" value="' . esc_attr(is_scalar($sub_value) ? (string) $sub_value : '') . '" dir="' . esc_attr((string) ($sub['dir'] ?? 'rtl')) . '">';
             }
         }
 
@@ -1076,7 +1262,12 @@ wp beryon integrity</pre>';
     {
         self::guard('beryon_reset_options');
 
+        // مقادیر پیش‌فرض از فایل خود قالب (config/defaults.json) می‌آیند و از پیش
+        // ساخت‌یافته‌اند؛ بدون گذر از پاک‌سازیِ فرم ذخیره می‌شوند تا عیناً همان
+        // مقادیر بنشینند (پیش‌تر فهرست‌ها هنگام بازنشانی به «Array» تبدیل می‌شدند).
+        \remove_filter('sanitize_option_' . self::OPTION, [self::class, 'sanitize']);
         \update_option(self::OPTION, Settings::defaults(), false);
+        \add_filter('sanitize_option_' . self::OPTION, [self::class, 'sanitize']);
         Settings::flush();
 
         self::redirect_back(\__('تنظیمات به مقادیر پیش‌فرض بازنشانی شد.', BERYON_TD));
@@ -1142,7 +1333,7 @@ wp beryon integrity</pre>';
                 'message' => \__('یک بسته zip حاوی patch.json انتخاب کنید.', BERYON_TD),
             ], 60);
 
-            self::redirect_back();
+            self::redirect_back('', 'beryon-updates');
         }
 
         $dry_run = isset($_POST['dry_run']);
@@ -1159,7 +1350,7 @@ wp beryon integrity</pre>';
                 'type'    => 'success',
                 'title'   => $dry_run ? \__('اعتبارسنجی موفق (حالت آزمایشی)', BERYON_TD) : \__('پچ با موفقیت اعمال شد', BERYON_TD),
                 'message' => esc_html((string) ($result['message'] ?? '')),
-                'plan'    => (array) ($result['plan'] ?? []),
+                'plan'    => (array) ($result['plan']['rows'] ?? []),
             ], 120);
         } else {
             \set_transient($flash_key, [
@@ -1169,7 +1360,7 @@ wp beryon integrity</pre>';
             ], 120);
         }
 
-        self::redirect_back('beryon-updates');
+        self::redirect_back('', 'beryon-updates');
     }
 
     /**

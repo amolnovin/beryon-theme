@@ -29,7 +29,7 @@
 <header class="header">
   <div class="container">
     <a class="brand" href="{{ esc_url(home_url('/')) }}" aria-label="{{ beryon_opt('general.brand_name') }} - صفحه اصلی">
-      {!! beryon_image_tag(beryon_opt('general.logo_file', 'logo.png'), ['alt' => 'لوگوی ' . beryon_opt('general.brand_name') . ' - ' . beryon_opt('general.company_name'), 'width' => 74, 'height' => 56, 'lazy' => false]) !!}
+      {!! beryon_logo_tag(['alt' => 'لوگوی ' . beryon_opt('general.brand_name') . ' - ' . beryon_opt('general.company_name'), 'width' => 74, 'height' => 56, 'lazy' => false]) !!}
       <span class="brand-text"><b>{{ beryon_opt('general.brand_name') }}</b><small>{{ beryon_opt('general.brand_latin') }}</small></span>
     </a>
     <ul class="nav" aria-label="منوی اصلی">
@@ -52,7 +52,7 @@
   <div class="overlay"></div>
   <div class="panel" role="dialog" aria-label="منوی موبایل">
     <div class="panel-head">
-      {!! beryon_image_tag(beryon_opt('general.logo_file', 'logo.png'), ['alt' => 'لوگوی ' . beryon_opt('general.brand_name')]) !!}
+      {!! beryon_logo_tag(['alt' => 'لوگوی ' . beryon_opt('general.brand_name'), 'width' => 61, 'height' => 46]) !!}
       <button class="close" aria-label="بستن منو"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <nav>

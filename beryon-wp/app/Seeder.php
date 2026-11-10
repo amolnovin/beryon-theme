@@ -27,7 +27,14 @@ final class Seeder
         'catalog'                    => 'page-catalog',
         'feedback'                   => 'page-feedback',
         'agency'                     => 'page-agency',
+        'contact-us'                 => 'page-contact-us',
     ];
+
+    /**
+     * تاریخ نادرستی که نسخه‌های ≤ ۱.۰.۳ برای نوشته‌های نمونه ثبت می‌کردند
+     * (gmmktime با ماه/روز/سال صفر)؛ فقط برای ترمیم همان نوشته‌ها استفاده می‌شود.
+     */
+    private const BROKEN_SEED_DATE = '1999-11-30 07:30:00';
 
     /**
      * اجرای کامل عملیات درج.
@@ -292,21 +299,53 @@ final class Seeder
         $tags = (array) ($data['tags'] ?? []);
 
         if ($tags !== [] && \taxonomy_exists('product_tag')) {
-            $names = [];
+            // هر برچسب با «اسلاگ لاتین» (برای فیلتر زنده: data-tags) و «نام فارسی»
+            // (برای نشان روی کارت و «نوع محصول») ساخته می‌شود.
+            $labels   = (array) (Products::catalog()['tags'] ?? []);
+            $term_ids = [];
 
             foreach ($tags as $tag_slug) {
-                $label = Products::catalog()['tags'][$tag_slug] ?? null;
+                $tag_slug = (string) $tag_slug;
 
-                if (is_string($label) && $label !== '') {
-                    $names[] = $label;
+                if ($tag_slug === '') {
+                    continue;
+                }
+
+                $label = isset($labels[$tag_slug]) && is_string($labels[$tag_slug]) && $labels[$tag_slug] !== ''
+                    ? $labels[$tag_slug]
+                    : $tag_slug;
+                $term  = \get_term_by('slug', $tag_slug, 'product_tag');
+
+                if ($term instanceof \WP_Term) {
+                    // برچسبی که نسخه‌های ≤ ۱.۰.۳ با نام لاتین (همان اسلاگ) ساخته‌اند ترمیم می‌شود؛
+                    // نامی که مدیر سایت تغییر داده دست‌نخورده می‌ماند (مگر با --force).
+                    if ($label !== $tag_slug && (string) $term->name !== $label && ($force || (string) $term->name === $tag_slug)) {
+                        \wp_update_term((int) $term->term_id, 'product_tag', ['name' => $label, 'slug' => $tag_slug]);
+                    }
+
+                    $term_ids[] = (int) $term->term_id;
 
                     continue;
                 }
 
-                $names[] = (string) $tag_slug;
+                $inserted = \wp_insert_term($label, 'product_tag', ['slug' => $tag_slug]);
+
+                if (\is_wp_error($inserted)) {
+                    $existing = (int) $inserted->get_error_data('term_exists');
+
+                    if ($existing > 0) {
+                        $term_ids[] = $existing;
+                    }
+
+                    continue;
+                }
+
+                $term_ids[] = (int) $inserted['term_id'];
             }
 
-            \wp_set_object_terms($post_id, $names, 'product_tag', false);
+            if ($term_ids !== []) {
+                \wp_set_object_terms($post_id, array_values(array_unique($term_ids)), 'product_tag', false);
+            }
         }
     }
 
@@ -393,8 +432,10 @@ final class Seeder
                 $parent_id = (int) $ids[$page['parent']];
             }
 
+            // مسیر کامل (والد/فرزند): get_page_by_path صفحه فرزند را فقط با مسیر کامل
+            // پیدا می‌کند؛ با اسلاگ تنها، هر بار اجرا یک رونوشت «-2» می‌ساخت.
             $slug     = $page['parent'] !== '' ? $page['parent'] . '/' . $page['slug'] : $page['slug'];
-            $existing = \get_page_by_path($page['slug'], OBJECT, 'page');
+            $existing = \get_page_by_path($slug, OBJECT, 'page');
 
             if ($existing instanceof \WP_Post) {
                 $page_id = $existing->ID;
@@ -493,14 +534,25 @@ final class Seeder
             $slug     = (string) ($post['slug'] ?? '');
             $existing = $slug !== '' ? \get_page_by_path($slug, OBJECT, 'post') : null;
 
+            // تاریخ آینده نوشته را «زمان‌بندی‌شده» می‌کند (۴۰۴ تا آن روز)؛ در آن حالت
+            // تاریخ خالی می‌ماند تا وردپرس زمان فعلی را بگذارد.
+            $timestamp = self::jalali_to_timestamp((string) ($post['jalali'] ?? ''));
+            $date      = $timestamp > 0 && $timestamp <= time() ? \gmdate('Y-m-d H:i:s', $timestamp) : '';
+
             if ($existing instanceof \WP_Post && ! $force) {
+                // ترمیم نوشته‌هایی که نسخه‌های ≤ ۱.۰.۳ با تاریخ نادرست درج کرده‌اند.
+                if ($date !== '' && (string) $existing->post_date_gmt === self::BROKEN_SEED_DATE) {
+                    \wp_update_post([
+                        'ID'            => $existing->ID,
+                        'post_date_gmt' => $date,
+                        'post_date'     => \get_date_from_gmt($date),
+                    ]);
+                }
+
                 $count++;
 
                 continue;
             }
-
-            $timestamp = self::jalali_to_timestamp((string) ($post['jalali'] ?? ''));
-            $date      = $timestamp > 0 ? \gmdate('Y-m-d H:i:s', $timestamp) : '';
 
             $args = [
                 'post_type'    => 'post',
@@ -572,13 +624,14 @@ final class Seeder
             return 0;
         }
 
+        // Jalali::toGregorian آرایه انجمنی ['gy','gm','gd'] برمی‌گرداند (نه عددی).
         $gregorian = Jalali::toGregorian($parts[0], $parts[1], $parts[2]);
 
-        if (! is_array($gregorian) || count($gregorian) !== 3) {
+        if (! is_array($gregorian) || ! isset($gregorian['gy'], $gregorian['gm'], $gregorian['gd'])) {
             return 0;
         }
 
-        $timestamp = \gmmktime(7, 30, 0, (int) $gregorian[1], (int) $gregorian[2], (int) $gregorian[0]);
+        $timestamp = \gmmktime(7, 30, 0, (int) $gregorian['gm'], (int) $gregorian['gd'], (int) $gregorian['gy']);
 
         return is_int($timestamp) ? $timestamp : 0;
     }
@@ -600,28 +653,69 @@ final class Seeder
             return 0;
         }
 
+        // GLOB_BRACE روی همه سکوها تعریف نشده است (مثلاً Alpine/musl)؛ هر پسوند جدا پیمایش می‌شود.
+        $files = [];
+
+        foreach (['png', 'jpg', 'jpeg', 'webp', 'gif'] as $extension) {
+            foreach ((array) glob($dir . '/*.' . $extension) as $file) {
+                if (is_string($file) && is_file($file)) {
+                    $files[] = $file;
+                }
+            }
+        }
+
+        sort($files);
+
+        if ($files === []) {
+            return 0;
+        }
+
+        if (! \function_exists('media_handle_sideload') || ! \function_exists('wp_tempnam')) {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+        }
+
         $count = 0;
 
-        foreach ((array) glob($dir . '/*.{png,jpg,jpeg,webp,gif,svg}', GLOB_BRACE) as $file) {
-            $name = basename((string) $file);
+        foreach ($files as $file) {
+            $name = basename($file);
 
             if (Assets::attachment_by_name($name) > 0) {
                 continue;
             }
 
-            if (! \function_exists('media_handle_sideload')) {
-                require_once ABSPATH . 'wp-admin/includes/image.php';
-                require_once ABSPATH . 'wp-admin/includes/file.php';
-                require_once ABSPATH . 'wp-admin/includes/media.php';
+            // media_handle_sideload فایل tmp_name را به پوشه آپلود «منتقل» می‌کند
+            // (copy + unlink)؛ پس همیشه روی یک رونوشت موقت کار می‌کنیم تا فایل
+            // اصلی قالب در public/assets/images حذف نشود.
+            $temporary = (string) \wp_tempnam($name);
+
+            if ($temporary === '' || ! @copy($file, $temporary)) { // phpcs:ignore WordPress.PHP.NoSilencedErrors
+                if ($temporary !== '' && is_file($temporary)) {
+                    @unlink($temporary); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+                }
+
+                continue;
             }
 
-            $upload = ['name' => $name, 'tmp_name' => (string) $file];
-            $id     = (int) \media_handle_sideload($upload, 0);
+            $id = \media_handle_sideload(['name' => $name, 'tmp_name' => $temporary], 0);
 
-            if ($id > 0 && ! \is_wp_error($id)) {
-                \update_post_meta($id, '_beryon_source_file', $name);
-                $count++;
+            if (\is_wp_error($id) || (int) $id <= 0) {
+                if (is_file($temporary)) {
+                    @unlink($temporary); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+                }
+
+                continue;
             }
+
+            // _beryon_asset کلیدی است که Assets::attachment_by_name با آن جست‌وجو می‌کند.
+            \update_post_meta((int) $id, '_beryon_asset', $name);
+            \update_post_meta((int) $id, '_beryon_source_file', $name);
+
+            // نتیجه «یافت نشد» همین نام پیش‌تر کش شده است؛ نگاشت تازه جایگزین می‌شود تا
+            // در همین اجرا تصویر شاخص دسته‌ها، محصولات و نوشته‌ها به پیوست وصل شود.
+            Assets::remember_attachment($name, (int) $id);
+            $count++;
         }
 
         return $count;
@@ -653,7 +747,11 @@ final class Seeder
             $created[$location] = $menu_id;
             $count++;
 
-            if ((int) \wp_get_nav_menu_item_count($menu_id) > 0) {
+            // منویی که آیتم دارد دوباره پر نمی‌شود (تابع wp_get_nav_menu_item_count
+            // در وردپرس وجود ندارد و فراخوانی‌اش درج را با خطای مرگبار متوقف می‌کرد).
+            $items = \wp_get_nav_menu_items($menu_id, ['post_status' => 'any']);
+
+            if (is_array($items) && $items !== []) {
                 continue;
             }
 
@@ -683,23 +781,16 @@ final class Seeder
      */
     private static function fill_menu(int $menu_id, string $location): void
     {
-        if ($location === 'footer_cats') {
-            foreach (Products::categories() as $category) {
-                \wp_update_nav_menu_item($menu_id, 0, [
-                    'menu-item-title'     => (string) $category['name'],
-                    'menu-item-object'    => Products::TAX,
-                    'menu-item-object-id' => (int) $category['term_id'],
-                    'menu-item-type'      => 'taxonomy',
-                    'menu-item-status'    => 'publish',
-                ]);
-            }
-
-            return;
-        }
-
+        // هر سه منو از همان فهرستی پر می‌شوند که منوی پیش‌فرض قالب را می‌سازد تا
+        // سایت پس از درج داده دقیقاً همان پیوندهای پیش از آن را داشته باشد (پیش‌تر
+        // «دسته‌های پانوشت» جداگانه پر می‌شد و پیوند «همه محصولات» را جا می‌انداخت).
         $items = Nav::items($location);
 
-        foreach ($items as $index => $item) {
+        // شماره ترتیبِ پیوسته (والد، سپس فرزندانش) تا ترتیب تختِ آیتم‌ها در پایگاه‌داده
+        // همان ترتیب درختی منو باشد.
+        $position = 0;
+
+        foreach ($items as $item) {
             $object = self::menu_object((string) $item['url']);
 
             $id = (int) \wp_update_nav_menu_item($menu_id, 0, [
@@ -709,7 +800,7 @@ final class Seeder
                 'menu-item-object-id' => $object['id'],
                 'menu-item-type'      => $object['type'],
                 'menu-item-status'    => 'publish',
-                'menu-item-position'  => $index + 1,
+                'menu-item-position'  => ++$position,
             ]);
 
             if ($id <= 0) {
@@ -718,7 +809,7 @@ final class Seeder
 
             $parent = $id;
 
-            foreach ((array) ($item['children'] ?? []) as $child_index => $child) {
+            foreach ((array) ($item['children'] ?? []) as $child) {
                 $child_object = self::menu_object((string) $child['url']);
 
                 \wp_update_nav_menu_item($menu_id, 0, [
@@ -729,7 +820,7 @@ final class Seeder
                     'menu-item-type'      => $child_object['type'],
                     'menu-item-status'    => 'publish',
                     'menu-item-parent-id' => $parent,
-                    'menu-item-position'  => $child_index + 1,
+                    'menu-item-position'  => ++$position,
                 ]);
             }
         }
@@ -745,6 +836,13 @@ final class Seeder
     {
         $parsed = \wp_parse_url($url);
         $path   = isset($parsed['path']) ? trim((string) $parsed['path'], '/') : '';
+
+        // نشانی‌های دارای query (پیوند یکتای ساده: ‎?page_id=…‎ یا ‎?post_type=…‎) از
+        // روی مسیر قابل تشخیص نیستند؛ همان نشانی به‌صورت پیوند دلخواه ثبت می‌شود تا
+        // با «صفحه نخست» اشتباه گرفته نشود.
+        if (! empty($parsed['query'])) {
+            return ['type' => 'custom', 'object' => '', 'id' => 0];
+        }
 
         if ($path === '') {
             $front = (int) \get_option('page_on_front');

@@ -7,7 +7,7 @@
  *   beryon-patch-1.1.0.zip
  *   ├── patch.json          (بیانیه/manifest — ساختار در PATCH_SPEC.md)
  *   ├── files/…             (فایل‌های جایگزین/جدید، با همان ساختار نسبی قالب)
- *   └── signature.txt       (اختیاری: hash_hmac sha256 از patch.json)
+ *   └── signature.txt       (اختیاری: hash_hmac sha256 از بایت‌های patch.json)
  *
  * مراحل اجرا: validate → stage → backup → apply → post-apply → log
  * هر خطا در مرحله apply باعث rollback خودکار از نسخه پشتیبان همان اجرا می‌شود.
@@ -121,14 +121,16 @@ final class PatchApplier
         }
 
         $manifest_json = $zip->getFromName('patch.json');
+        $manifest_dir  = '';
 
         if ($manifest_json === false) {
             // پشتیبانی از بسته‌هایی که بیانیه در زیرپوشه قرار دارد
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $name = (string) $zip->getNameIndex($i);
 
-                if (preg_match('#^[^/]+/patch\.json$#', $name)) {
+                if (preg_match('#^([^/]+/)patch\.json$#', $name, $match)) {
                     $manifest_json = $zip->getFromName($name);
+                    $manifest_dir  = (string) $match[1];
                     break;
                 }
             }
@@ -148,7 +150,10 @@ final class PatchApplier
             return self::fail('bad_manifest', \__('patch.json قابل تجزیه نیست (JSON نامعتبر).', BERYON_TD));
         }
 
-        $check = self::validate_manifest($manifest, $manifest_json);
+        // امضای جدا (signature.txt کنار patch.json)؛ در نبود آن، کلید signature مانیفست بررسی می‌شود.
+        $signature_txt = $zip->getFromName($manifest_dir . 'signature.txt');
+
+        $check = self::validate_manifest($manifest, $manifest_json, is_string($signature_txt) ? $signature_txt : '');
 
         if (! $check['ok']) {
             $zip->close();
@@ -162,11 +167,12 @@ final class PatchApplier
     /**
      * اعتبارسنجی بیانیه Patch.
      *
-     * @param array<string,mixed> $manifest بیانیه
-     * @param string              $raw      متن خام patch.json (برای امضا)
+     * @param array<string,mixed> $manifest  بیانیه
+     * @param string              $raw       متن خام patch.json (برای امضا)
+     * @param string              $signature محتوای signature.txt بسته (در صورت وجود)
      * @return array{ok:bool,error?:string,code?:string}
      */
-    public static function validate_manifest(array $manifest, string $raw = ''): array
+    public static function validate_manifest(array $manifest, string $raw = '', string $signature = ''): array
     {
         if ((int) ($manifest['format'] ?? 0) !== self::FORMAT) {
             return self::fail('format', sprintf(\__('نسخه ساختار Patch پشتیبانی نمی‌شود (انتظار: %d).', BERYON_TD), self::FORMAT));
@@ -268,19 +274,44 @@ final class PatchApplier
             }
         }
 
-        // امضای اختیاری
+        // امضا: اگر کلید امضا در سایت تنظیم شده باشد، بسته باید امضای معتبر داشته باشد.
+        //  ۱) signature.txt → HMAC-SHA256 روی بایت‌های خام patch.json
+        //  ۲) کلید signature داخل مانیفست → HMAC روی مانیفستِ بدون همان کلید
+        //     (signing_payload؛ همان چیزی که Updater::create امضا می‌کند).
+        // پیش‌تر فقط حالت ۲ خوانده می‌شد و با متن خامِ «دارای» کلید signature
+        // مقایسه می‌شد؛ در نتیجه هیچ بسته امضاشده‌ای تأیید نمی‌شد.
         $signature_key = (string) Settings::opt('updater.signature_key', '');
 
         if ($signature_key !== '' && $raw !== '') {
-            $expected = hash_hmac('sha256', $raw, $signature_key);
-            $provided = (string) ($manifest['signature'] ?? '');
+            $provided = strtolower(trim($signature));
 
-            if (! hash_equals($expected, $provided)) {
+            if ($provided !== '') {
+                $expected = hash_hmac('sha256', $raw, $signature_key);
+            } else {
+                $provided = strtolower(trim((string) ($manifest['signature'] ?? '')));
+                $expected = hash_hmac('sha256', self::signing_payload($manifest), $signature_key);
+            }
+
+            if ($provided === '' || ! hash_equals($expected, $provided)) {
                 return self::fail('signature', \__('امضای Patch تأیید نشد.', BERYON_TD));
             }
         }
 
         return ['ok' => true];
+    }
+
+    /**
+     * متن یکتای مانیفست برای امضا: مانیفست بدون کلید signature با همان
+     * قالب‌بندی‌ای که Updater::create در patch.json می‌نویسد.
+     *
+     * @param array<string,mixed> $manifest بیانیه
+     * @return string
+     */
+    public static function signing_payload(array $manifest): string
+    {
+        unset($manifest['signature']);
+
+        return (string) \wp_json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
     }
 
     /**
@@ -487,11 +518,11 @@ final class PatchApplier
      * ساخت برنامه تغییرات (برای نمایش و پشتیبان‌گیری).
      *
      * @param array<string,mixed> $manifest بیانیه
-     * @return array{copy:int,delete:int,mkdir:int,paths:array<int,string>,exists:array<int,string>,new:array<int,string>}
+     * @return array{copy:int,delete:int,mkdir:int,paths:array<int,string>,exists:array<int,string>,new:array<int,string>,rows:array<int,array{op:string,path:string}>}
      */
     public static function build_plan(array $manifest): array
     {
-        $plan = ['copy' => 0, 'delete' => 0, 'mkdir' => 0, 'paths' => [], 'exists' => [], 'new' => []];
+        $plan = ['copy' => 0, 'delete' => 0, 'mkdir' => 0, 'paths' => [], 'exists' => [], 'new' => [], 'rows' => []];
 
         foreach ((array) $manifest['files'] as $file) {
             $operation = (string) ($file['op'] ?? 'copy');
@@ -505,6 +536,22 @@ final class PatchApplier
                 $plan['exists'][] = $path;
             } else {
                 $plan['new'][] = $path;
+            }
+
+            // ردیف نمایشی (پیام پنل و WP-CLI): add = فایل تازه، replace = جایگزینی
+            $label = $operation;
+
+            if ($operation === 'copy') {
+                $label = file_exists($absolute) ? 'replace' : 'add';
+            }
+
+            $plan['rows'][] = ['op' => $label, 'path' => $path];
+        }
+
+        // دستورهای SQL هم بخشی از تغییرات‌اند و باید در پیش‌نمایش دیده شوند.
+        foreach ((array) ($manifest['sql'] ?? []) as $statement) {
+            if (is_string($statement) && trim($statement) !== '') {
+                $plan['rows'][] = ['op' => 'sql', 'path' => trim($statement)];
             }
         }
 
@@ -644,7 +691,10 @@ final class PatchApplier
     {
         $version = (string) ($manifest['version'] ?? BERYON_VERSION);
 
-        Updater::set_version($version);
+        // نام کامل: داخل فضای نام App\Updater نام کوتاه «Updater» به کلاس ناموجود
+        // App\Updater\Updater تفسیر می‌شد و اعمال Patch پس از جایگزینی فایل‌ها با
+        // خطای مرگبار متوقف می‌شد (بدون ثبت نسخه و لاگ).
+        \App\Updater::set_version($version);
         Settings::flush();
 
         // پاک‌سازی کش‌ها
@@ -657,6 +707,10 @@ final class PatchApplier
         }
 
         \flush_rewrite_rules(false);
+
+        // کدِ در حافظه هنوز نسخه پیشین است؛ با حذف این گزینه، وردپرس در درخواست بعدی
+        // قواعد بازنویسی را با فایل‌های تازه دوباره می‌سازد.
+        \delete_option('rewrite_rules');
 
         // به‌روزرسانی اثر انگشت امنیتی
         Security::fingerprint();
@@ -781,7 +835,7 @@ final class PatchApplier
         $zip->close();
 
         if ($reset && is_array($meta) && ! empty($meta['from_version'])) {
-            Updater::set_version((string) $meta['from_version']);
+            \App\Updater::set_version((string) $meta['from_version'], \__('بازگردانی از پشتیبان', BERYON_TD));
         }
 
         Assets::flush_image_cache();
@@ -789,6 +843,10 @@ final class PatchApplier
         Products::flush_cache();
         Security::fingerprint();
         \flush_rewrite_rules(false);
+
+        // مثل post_apply: کدِ در حافظه هنوز نسخه پیش از بازگردانی است؛ با حذف این گزینه
+        // قواعد بازنویسی در درخواست بعدی با فایل‌های بازگردانده‌شده ساخته می‌شوند.
+        \delete_option('rewrite_rules');
 
         self::log(['ok' => true, 'action' => 'rollback', 'restored' => $restored, 'backup' => basename($file)], ['source' => 'rollback']);
 
@@ -1032,7 +1090,7 @@ final class PatchApplier
      */
     public static function log(array $result, array $options = [], array $manifest = []): void
     {
-        Updater::log(
+        \App\Updater::log(
             [
                 'time'      => time(),
                 'ok'        => (bool) ($result['ok'] ?? false),

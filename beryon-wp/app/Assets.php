@@ -34,6 +34,20 @@ final class Assets
     private static $manifest = null;
 
     /**
+     * حافظه نهان «نام تصویر → URL» در سطح درخواست.
+     *
+     * @var array<string,string>
+     */
+    private static $image_urls = [];
+
+    /**
+     * حافظه نهان «نام تصویر → شناسه پیوست» در سطح درخواست.
+     *
+     * @var array<string,int>
+     */
+    private static $attachment_ids = [];
+
+    /**
      * ثبت هوک‌ها.
      *
      * @return void
@@ -507,6 +521,15 @@ final class Assets
      */
     public static function image_url(string $name): string
     {
+        $name = trim($name);
+
+        // نشانی کامل (مثلاً URL تصویر شاخص یا نشانی واردشده در پنل) نام فایل قالب
+        // نیست؛ همان‌طور که هست برمی‌گردد. پیش‌تر به مسیر public/assets/images
+        // چسبانده می‌شد و نشانی خراب می‌ساخت.
+        if (self::is_absolute_url($name)) {
+            return $name;
+        }
+
         $name = ltrim($name, '/');
 
         if ($name === '') {
@@ -514,10 +537,8 @@ final class Assets
         }
 
         // حافظه نهان در سطح درخواست
-        static $seen = [];
-
-        if (isset($seen[$name])) {
-            return $seen[$name];
+        if (isset(self::$image_urls[$name])) {
+            return self::$image_urls[$name];
         }
 
         $url = '';
@@ -560,16 +581,32 @@ final class Assets
             }
         }
 
-        $seen[$name] = $url !== '' ? $url : self::public_url('images/' . $name);
+        if ($url === '') {
+            $url = self::public_url('images/' . $name);
+        }
 
-        return $seen[$name];
+        self::$image_urls[$name] = $url;
+
+        return $url;
+    }
+
+    /**
+     * آیا مقدار یک نشانی کامل است (http://، https:// یا //host)؟
+     *
+     * @param string $value مقدار
+     * @return bool
+     */
+    public static function is_absolute_url(string $value): bool
+    {
+        return (bool) preg_match('#^(?:https?:)?//[^/\s]#i', $value);
     }
 
     /**
      * تگ <img> بهینه.
      *
-     * @param string              $name نام تصویر
-     * @param array<string,mixed> $args گزینه‌ها
+     * @param string              $name نام فایل تصویر یا نشانی کامل آن
+     * @param array<string,mixed> $args گزینه‌ها؛ «attachment» = شناسه پیوستِ همین تصویر
+     *                                  (وقتی $name نشانی کامل است، ابعاد و srcset از آن می‌آید)
      * @return string
      */
     public static function image_tag(string $name, array $args = []): string
@@ -580,7 +617,14 @@ final class Assets
             return '';
         }
 
-        $attachment = self::attachment_by_name($name);
+        // پیوست: یا صریح داده شده، یا از روی «نام فایل» پیدا می‌شود. برای نشانی کامل
+        // جست‌وجوی نام بی‌معناست (و برای هر نشانی یک Transient می‌ساخت).
+        if (! empty($args['attachment'])) {
+            $attachment = max(0, (int) $args['attachment']);
+        } else {
+            $attachment = self::is_absolute_url(trim($name)) ? 0 : self::attachment_by_name($name);
+        }
+
         $dimensions = self::dimensions($name, $attachment);
 
         $lazy     = ! isset($args['lazy']) ? true : (bool) $args['lazy'];
@@ -636,6 +680,12 @@ final class Assets
                 continue;
             }
 
+            // ابعاد نامعلوم (تصویر بیرونی یا فایل ناموجود) چاپ نمی‌شود؛ width="0"
+            // تصویر سالم را هم از دید پنهان می‌کرد.
+            if (($key === 'width' || $key === 'height') && (int) $value < 1) {
+                continue;
+            }
+
             $html .= ' ' . $key . '="' . $value . '"';
         }
 
@@ -657,14 +707,25 @@ final class Assets
             return '';
         }
 
-        $base  = \trailingslashit((string) dirname(\wp_get_attachment_url($attachment)));
-        $items = [];
+        $base        = \trailingslashit((string) dirname(\wp_get_attachment_url($attachment)));
+        $items       = [];
+        $full_width  = (int) ($meta['width'] ?? 0);
+        $full_height = (int) ($meta['height'] ?? 0);
 
         foreach ((array) $meta['sizes'] as $size) {
-            $width = (int) ($size['width'] ?? 0);
-            $file  = (string) ($size['file'] ?? '');
+            $width  = (int) ($size['width'] ?? 0);
+            $height = (int) ($size['height'] ?? 0);
+            $file   = (string) ($size['file'] ?? '');
 
             if ($width < 1 || $file === '' || ($maxWidth > 0 && $width > $maxWidth * 2)) {
+                continue;
+            }
+
+            // اندازه‌های «برش سخت» (thumbnail، beryon-thumb، beryon-card، beryon-cat، beryon-wide) تصویر
+            // دیگری با نسبت دیگرند. همه گزینه‌های srcset باید همان تصویر در اندازه‌های مختلف باشند
+            // (همان قاعده هسته وردپرس)؛ وگرنه مرورگر در برخی پهناها نسخه برش‌خورده را برمی‌دارد و در
+            // قاب تصویر اصلی می‌کشد.
+            if ($full_width > 0 && $full_height > 0 && $height > 0 && ! \wp_image_matches_ratio($width, $height, $full_width, $full_height)) {
                 continue;
             }
 
@@ -720,19 +781,21 @@ final class Assets
      */
     public static function attachment_by_name(string $name): int
     {
-        static $found = [];
+        if ($name === '') {
+            return 0;
+        }
 
-        if (isset($found[$name])) {
-            return $found[$name];
+        if (isset(self::$attachment_ids[$name])) {
+            return self::$attachment_ids[$name];
         }
 
         $transient = 'beryon_img_' . substr(md5($name), 0, 16);
         $cached    = \get_transient($transient);
 
         if ($cached !== false) {
-            $found[$name] = (int) $cached;
+            self::$attachment_ids[$name] = (int) $cached;
 
-            return $found[$name];
+            return self::$attachment_ids[$name];
         }
 
         global $wpdb;
@@ -762,9 +825,32 @@ final class Assets
         // phpcs:enable
 
         \set_transient($transient, $id, 6 * HOUR_IN_SECONDS);
-        $found[$name] = $id;
+        self::$attachment_ids[$name] = $id;
 
         return $id;
+    }
+
+    /**
+     * ثبت نگاشت «نام فایل → پیوست» در حافظه نهان (پس از درون‌ریزی رسانه).
+     *
+     * نتیجه «یافت نشد» تا ۶ ساعت در Transient می‌ماند و حذف مستقیم آن از پایگاه
+     * داده در همان درخواست (یا با کش شیء ماندگار) دیده نمی‌شود؛ درون‌ریز با این
+     * متد نگاشت تازه را مستقیم جایگزین می‌کند.
+     *
+     * @param string $name نام فایل
+     * @param int    $id   شناسه پیوست
+     * @return void
+     */
+    public static function remember_attachment(string $name, int $id): void
+    {
+        if ($name === '' || $id < 1) {
+            return;
+        }
+
+        self::$attachment_ids[$name] = $id;
+        unset(self::$image_urls[$name]);
+
+        \set_transient('beryon_img_' . substr(md5($name), 0, 16), $id, 6 * HOUR_IN_SECONDS);
     }
 
     /**
@@ -775,6 +861,10 @@ final class Assets
     public static function flush_image_cache(): void
     {
         global $wpdb;
+
+        // حافظه نهان همین درخواست (تا پس از درون‌ریزی رسانه، نتیجه کهنه برنگردد)
+        self::$image_urls     = [];
+        self::$attachment_ids = [];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_beryon_img_%' OR option_name LIKE '_transient_timeout_beryon_img_%'");
