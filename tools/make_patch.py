@@ -18,12 +18,26 @@ app/Updater/PatchApplier.php::validate_manifest() اعتبارسنجی می‌ک
 در updater.patch_slug_allowlist و updater.patch_ext_allowlist قالب جای می‌گیرند
 (در غیر این‌صورت خود قالب هنگام اعتبارسنجی بسته را رد می‌کند).
 
-کاربرد:  python3 tools/make_patch.py <version> [--since "YYYY-MM-DD HH:MM"]
+کاربرد:  python3 tools/make_patch.py <version> [--since "YYYY-MM-DD HH:MM"] [--base <git-ref>] [--from X]
+
+دو روش انتخاب فایل‌ها:
+  --since  فایل‌هایی که زمان تغییرشان (mtime) از این لحظه به بعد است. فقط در
+           همان پوشه کاری که ویرایش‌ها در آن انجام شده معنا دارد؛ در clone تازه
+           زمان همه فایل‌ها زمان checkout است و بسته شامل کل قالب می‌شود.
+  --base   فایل‌هایی که نسبت به یک ref گیت (کامیت/تگ نسخه پیشین) تغییر کرده،
+           اضافه یا حذف شده‌اند + فایل‌های تازه ردگیری‌نشده. به mtime وابسته نیست.
+           اگر مدخل RELEASES کلید «base» داشته باشد و --since داده نشود، همین روش
+           به‌کار می‌رود. در این حالت requires.theme_min برابر from_version است
+           (بسته تفاضلی فقط روی همان نسخه پایه قابل اعمال است).
+
+بسته امضا نمی‌شود؛ برای سایتی که updater.signature_key دارد، signature.txt را
+طبق docs/PATCH_SPEC.md (بخش ۷، شکل ۱) به zip اضافه کنید.
 """
 import hashlib
 import io
 import json
 import os
+import subprocess
 import sys
 import time
 import zipfile
@@ -82,6 +96,46 @@ def collect(since_stamp):
     return sorted(changed)
 
 
+def collect_git(base):
+    """فایل‌های تغییرکرده و حذف‌شده قالب نسبت به یک ref گیت.
+
+    خروجی: (فهرست مسیرهای موجود برای کپی، فهرست مسیرهای حذف‌شده) — هر دو نسبت
+    به ریشه قالب و فقط در محدوده مجاز Patch.
+    """
+    prefix = 'beryon-wp/'
+
+    def git(*args):
+        try:
+            out = subprocess.check_output(('git', '-C', ROOT) + args, stderr=subprocess.STDOUT)
+        except (OSError, subprocess.CalledProcessError) as error:
+            detail = getattr(error, 'output', b'') or b''
+            raise SystemExit('git ناموفق بود (%s): %s' % (' '.join(args[:2]), detail.decode('utf-8', 'replace').strip() or error))
+        return [item for item in out.decode('utf-8').split('\0') if item]
+
+    # --no-renames: جابه‌جایی فایل به‌صورت «حذف + افزودن» دیده می‌شود تا مسیر قدیمی جا نماند.
+    changed = set(git('diff', '--name-only', '--no-renames', '--diff-filter=ACM', '-z', base, '--', 'beryon-wp'))
+    changed |= set(git('ls-files', '--others', '--exclude-standard', '-z', '--', 'beryon-wp'))
+    deleted = set(git('diff', '--name-only', '--no-renames', '--diff-filter=D', '-z', base, '--', 'beryon-wp'))
+
+    def scoped(names, must_exist):
+        result = []
+        for name in sorted(names):
+            if not name.startswith(prefix):
+                continue
+            relative = name[len(prefix):]
+            if must_exist and not os.path.isfile(os.path.join(THEME, relative)):
+                continue
+            if relative.startswith('public/patches/') or relative.startswith('storage/'):
+                continue
+            if not allowed_slug(relative) or not allowed_ext(relative):
+                print('   رد شد (بیرون از محدوده مجاز Patch): %s' % relative)
+                continue
+            result.append(relative)
+        return result
+
+    return scoped(changed, True), scoped(deleted - changed, False)
+
+
 def theme_version():
     with io.open(os.path.join(THEME, 'style.css'), encoding='utf-8') as handle:
         for line in handle:
@@ -90,11 +144,16 @@ def theme_version():
     return '0.0.0'
 
 
-def build(version, since, label, notes, from_version='1.0.0'):
-    stamp = time.mktime(time.strptime(since, '%Y-%m-%d %H:%M'))
-    paths = collect(stamp)
+def build(version, since, label, notes, from_version='1.0.0', base=None):
+    deleted = []
 
-    if not paths:
+    if base:
+        paths, deleted = collect_git(base)
+    else:
+        stamp = time.mktime(time.strptime(since, '%Y-%m-%d %H:%M'))
+        paths = collect(stamp)
+
+    if not paths and not deleted:
         raise SystemExit('هیچ فایل تغییرکرده‌ای پیدا نشد.')
 
     files = []
@@ -108,6 +167,10 @@ def build(version, since, label, notes, from_version='1.0.0'):
             'size': os.path.getsize(absolute),
             'mode': '0644',
         })
+
+    # فایل‌هایی که نسبت به نسخه پایه حذف شده‌اند (فقط در حالت --base قابل تشخیص است)
+    for relative in deleted:
+        files.append({'path': relative, 'op': 'delete'})
 
     manifest = {
         'format': 1,
@@ -123,7 +186,8 @@ def build(version, since, label, notes, from_version='1.0.0'):
         'requires': {
             'php': '7.4',
             'wordpress': '6.4',
-            'theme_min': '1.0.0',
+            # بسته تفاضلی (--base) فقط فایل‌های تغییرکرده نسبت به همان نسخه را دارد
+            'theme_min': from_version if base else '1.0.0',
         },
         'files': files,
         'post_apply': ['flush_rewrites', 'clean_caches', 'refingerprint'],
@@ -155,12 +219,37 @@ def build(version, since, label, notes, from_version='1.0.0'):
         archive.writestr('patch.json', payload)
         archive.writestr('README.txt', readme)
         for entry in files:
-            archive.write(os.path.join(THEME, entry['path']), 'files/' + entry['path'])
+            if entry['op'] == 'copy':
+                archive.write(os.path.join(THEME, entry['path']), 'files/' + entry['path'])
 
     return manifest, payload
 
 
 RELEASES = {
+    '1.0.4': {
+        'from': '1.0.3',
+        # کامیت نسخه ۱.۰.۳ روی main؛ فایل‌های بسته = تفاوت پوشه کاری با همین کامیت
+        'base': 'f88f98364c212e853899629ee4e7d7c302037a3a',
+        'label': '۱.۰.۴ — رفع ایرادهای بازبینی: مسیریابی نماها، داده نمونه، Patch، پنل تنظیمات، منوها و چیدمان',
+        'notes': [
+            '۱) MiniBlade/Template: نماها پیش از نخستین رندر پیدا نمی‌شدند و همه نشانی‌ها فهرست وبلاگ (index) را نشان می‌دادند. نماهای تازه page و singular برای برگه‌های بدون نمای اختصاصی.',
+            '۲) Seeder: خطای مرگبار هنگام ساخت منوها، برگه‌های تکراری در هر اجرا، تاریخ ۱۹۹۹ نوشته‌های نمونه، درون‌ریزی رسانه (GLOB_BRACE و جابه‌جا شدن فایل تصویر قالب)، نام لاتین برچسب محصولات.',
+            '۳) Updater/PatchApplier: خطای مرگبار پس از کپی فایل‌ها (ثبت نشدن نسخه)، رد شدن همه بسته‌های امضاشده، خوانده نشدن signature.txt، دکمه‌های «بازگردانی» و «بازسازی اثر انگشت»، حداقل PHP بسته‌های ساخته‌شده (۸.۱ → ۷.۴).',
+            '۴) SettingsPage: ذخیره یک زبانه مقدار زبانه‌های دیگر را خالی می‌کرد؛ بازنشانی، تکرارشونده‌های زبانه «صفحات»، چک‌باکس‌ها، پاک‌کردن تصویر انتخابی و زبانه «پیشرفته».',
+            '۵) functions.php: خطای مرگبار پیام خوش‌آمد در نخستین بارگذاری پیشخوان (PHP 8).',
+            '۶) Seo: نشانی سایت‌مپ به صفحه اصلی ریدایرکت می‌شد؛ الگوی قاعده بازنویسی اصلاح شد. توضیح متا برای نوشته رمزدار.',
+            '۷) Forms: فرم نمایندگی با «انواع فروش» چندگزینه‌ای خطای ۴۰۰ می‌داد.',
+            '۸) Assets/helpers/نماها: نشانی تصویر کارت‌های مجله، تصویر شاخص، لوگوی انتخابی، صفحه‌بندی، کارت دسته‌ها در ۴۰۴، برچسب فارسی محصولات، نوشته رمزدار، کش «آخرین نوشته‌ها».',
+            '۹) Jalali/Submissions: ساعت در تاریخ‌های پنل و اخطار wpdb::prepare در صندوق پیام‌ها.',
+            '۱۰) NavWalker/Nav: با منوی وصل‌شده به جایگاه‌های قالب سربرگ به‌هم می‌ریخت (<li> درون زیرمنو، <ul> تو در تو در پابرگ) و کشوی موبایل منوی وصل‌شده را نشان نمی‌داد. درج داده نمونه سه منو می‌سازد و وصل می‌کند.',
+            '۱۱) CSS: فیلد تله ربات برگه‌های فرم حدود ده‌هزار پیکسل پهنای اضافه می‌ساخت؛ فاصله بالای hero صفحه اصلی و top ستون کناری چسبان در CSS ساخته‌شده نامعتبر بود (خطای فشرده‌ساز در calc و rect)؛ لوگوی کشیده در کشوی موبایل و پابرگ.',
+            '۱۲) helpers/Seeder: آیتم فعال منو در برگه «تماس با ما»؛ Products: تعداد محصولات مرتبط یکی بیشتر از تنظیم بود؛ Assets: فقط اندازه‌های هم‌نسبت در srcset.',
+            '۱۳) نسخه قالب: 1.0.4 (style.css).',
+            'نصب روی ۱.۰.۳: درخواست بارگذاری با صفحه «خطای مهم» تمام می‌شود (خطای خودِ ۱.۰.۳ پس از جایگزینی فایل‌ها)؛ صفحه را دوباره باز کنید و «به‌روزرسانی ← بازسازی اثر انگشت» را بزنید. اگر کلید امضا تنظیم است، پیش از بارگذاری خالی‌اش کنید.',
+            'اگر پیش‌تر داده نمونه درج شده: «ابزارها ← اجرای دوباره داده‌های نمونه» منوها را می‌سازد و وصل می‌کند، برگه نخست و قالب برگه «تماس با ما» را تنظیم و تاریخ نوشته‌ها و نام برچسب‌ها را ترمیم می‌کند.',
+            'فایل CSS قالب عوض شده است؛ اگر افزونه کش یا CDN دارید یک بار کش را پاک کنید.',
+        ],
+    },
     '1.0.3': {
         'from': '1.0.0',
         'label': '۱.۰.۳ — رفع بی‌استایلی سایت: پایه URL قطعی دارایی‌ها + نسخه پویا',
@@ -211,6 +300,14 @@ def main():
             opts['from'] = a.split('=', 1)[1]
             i += 1
             continue
+        if a == '--base' and i + 1 < len(argv):
+            opts['base'] = argv[i + 1]
+            i += 2
+            continue
+        if a.startswith('--base='):
+            opts['base'] = a.split('=', 1)[1]
+            i += 1
+            continue
         if not a.startswith('--'):
             args.append(a)
         i += 1
@@ -242,7 +339,15 @@ def main():
         notes = '\n'.join(meta['notes'])
         if from_version is None:
             from_version = meta.get('from')
-    manifest, payload = build(version, since, label, notes, from_version or '1.0.0')
+
+    # --since صریح یعنی انتخاب بر پایه mtime؛ در غیر این صورت --base یا «base» مدخل نسخه
+    base = opts.get('base')
+    if base is None and 'since' not in opts and meta:
+        base = meta.get('base')
+
+    manifest, payload = build(version, since, label, notes, from_version or '1.0.0', base)
+
+    print('روش انتخاب فایل‌ها: %s' % ('git diff نسبت به ' + base if base else 'mtime از ' + since))
 
     print('بسته Patch ساخته شد: %s' % OUT)
     print('  نسخه      : %s ← %s' % (manifest['from_version'], manifest['version']))
@@ -253,7 +358,10 @@ def main():
     print('')
     print('  فهرست فایل‌ها:')
     for entry in manifest['files']:
-        print('    %-58s %8d B' % (entry['path'], entry['size']))
+        if entry['op'] == 'copy':
+            print('    %-58s %8d B' % (entry['path'], entry['size']))
+        else:
+            print('    %-58s %8s' % (entry['path'], entry['op']))
 
     # خودآزمایی: مانیفست باید با قواعد PatchApplier سازگار باشد
     problems = []
@@ -262,12 +370,14 @@ def main():
     if manifest['theme'] != 'beryon':
         problems.append('theme')
     for entry in manifest['files']:
+        if not allowed_slug(entry['path']) or not allowed_ext(entry['path']):
+            problems.append('scope: ' + entry['path'])
+        if entry['op'] != 'copy':
+            continue
         if not entry['from'].startswith('files/'):
             problems.append('from: ' + entry['path'])
         if len(entry['sha256']) != 64:
             problems.append('sha256: ' + entry['path'])
-        if not allowed_slug(entry['path']) or not allowed_ext(entry['path']):
-            problems.append('scope: ' + entry['path'])
         if entry['size'] > 15728640:
             problems.append('size: ' + entry['path'])
     print('')

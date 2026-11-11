@@ -1,0 +1,52 @@
+# با انتشار هر Release، بسته نصب قالب (beryon-wp.zip) از همان کامیتِ برچسب ساخته و
+# به Release پیوست می‌شود. zip در مخزن نگهداری نمی‌شود (*.zip در .gitignore).
+# اجرای دستی برای یک Release موجود: Actions ← همین workflow ← Run workflow ← برچسب.
+name: Theme zip for release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'برچسب Release (مثلاً v1.0.4)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  theme-zip:
+    name: Build beryon-wp.zip and attach it to the release
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Checkout the release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Build the package (tools/make_theme_zip.py — builds assets, runs its self-test)
+        run: python3 tools/make_theme_zip.py
+
+      - name: Verify the package against the checkout
+        run: |
+          python3 - <<'PY'
+          import hashlib, os, sys, zipfile
+          z = zipfile.ZipFile('beryon-wp.zip')
+          names = [n for n in z.namelist() if not n.endswith('/')]
+          tops = sorted({n.split('/', 1)[0] for n in names})
+          bad = [n for n in names if not os.path.isfile(n) or open(n, 'rb').read() != z.read(n)]
+          broken = z.testzip()
+          print('files: %d | top folders: %s | CRC: %s | entries that differ from the checkout: %s' % (len(names), tops, broken or 'ok', bad))
+          print('size: %d B | sha256: %s' % (os.path.getsize('beryon-wp.zip'), hashlib.sha256(open('beryon-wp.zip', 'rb').read()).hexdigest()))
+          sys.exit(1 if (bad or broken or tops != ['beryon-wp']) else 0)
+          PY
+          sha256sum beryon-wp.zip > beryon-wp.zip.sha256
+          cat beryon-wp.zip.sha256 >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" beryon-wp.zip beryon-wp.zip.sha256 --clobber

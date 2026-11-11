@@ -58,6 +58,7 @@ final class Updater
         \add_action('wp_ajax_beryon_apply_patch', [self::class, 'ajax_apply']);
         \add_action('wp_ajax_beryon_rollback', [self::class, 'ajax_rollback']);
         \add_action('wp_ajax_beryon_integrity', [self::class, 'ajax_integrity']);
+        \add_action('wp_ajax_beryon_fingerprint', [self::class, 'ajax_fingerprint']);
 
         if (defined('WP_CLI') && WP_CLI) {
             \add_action('cli_init', [self::class, 'register_cli']);
@@ -80,6 +81,10 @@ final class Updater
         }
 
         \update_option(self::VERSION_OPTION, BERYON_VERSION, false);
+
+        // فایل‌های قالب عوض شده‌اند؛ قواعد بازنویسی (مثل سایت‌مپ) در درخواست بعدی
+        // با کد تازه از نو ساخته می‌شوند.
+        \delete_option('rewrite_rules');
 
         $history   = (array) \get_option(self::HISTORY_OPTION, []);
         $history[] = [
@@ -207,6 +212,7 @@ final class Updater
      */
     public static function log(array $entry): void
     {
+        $entry['time']          = (int) ($entry['time'] ?? time());
         $entry['theme_version'] = self::version();
         $entry['site']          = \home_url('/');
 
@@ -431,7 +437,7 @@ final class Updater
             return;
         }
 
-        $url = \admin_url('themes.php?page=beryon-updates');
+        $url = \admin_url('admin.php?page=beryon-updates');
 
         echo '<div class="notice notice-info"><p dir="rtl">' .
             sprintf(
@@ -577,7 +583,16 @@ final class Updater
     {
         self::guard();
 
-        $name = isset($_POST['backup']) ? \sanitize_file_name(\wp_unslash($_POST['backup'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+        // دکمه «بازگردانی» پنل نام فایل را با کلید file می‌فرستد (data-file)؛ کلید
+        // backup برای سازگاری با فراخوان‌های پیشین همچنان پذیرفته می‌شود.
+        $name = '';
+
+        foreach (['backup', 'file'] as $param) {
+            if (isset($_POST[$param]) && is_string($_POST[$param]) && $_POST[$param] !== '') { // phpcs:ignore WordPress.Security.NonceVerification
+                $name = \sanitize_file_name(\wp_unslash($_POST[$param])); // phpcs:ignore WordPress.Security.NonceVerification
+                break;
+            }
+        }
 
         if ($name === '') {
             \wp_send_json_error(['message' => \__('پشتیبانی انتخاب نشده است.', BERYON_TD)], 400);
@@ -612,10 +627,58 @@ final class Updater
         if ($action === 'refresh') {
             Security::fingerprint();
 
-            \wp_send_json_success(['message' => \__('اثر انگشت فایل‌ها به‌روزرسانی شد.', BERYON_TD), 'result' => Security::verify()]);
+            \wp_send_json_success(self::integrity_payload(\__('اثر انگشت فایل‌ها به‌روزرسانی شد.', BERYON_TD)));
         }
 
-        \wp_send_json_success(['result' => Security::verify()]);
+        \wp_send_json_success(self::integrity_payload());
+    }
+
+    /**
+     * بازسازی اثر انگشت فایل‌ها (AJAX) — دکمه «بازسازی اثر انگشت» صفحه به‌روزرسانی.
+     *
+     * @return void
+     */
+    public static function ajax_fingerprint(): void
+    {
+        self::guard();
+
+        Security::fingerprint();
+
+        \wp_send_json_success(self::integrity_payload(\__('اثر انگشت فایل‌ها بازسازی شد.', BERYON_TD)));
+    }
+
+    /**
+     * پاسخ یکپارچگی به شکلی که اسکریپت پنل نمایش می‌دهد
+     * (message, total, modified, log در سطح اول؛ result برای سازگاری می‌ماند).
+     *
+     * @param string $message پیام دلخواه
+     * @return array<string,mixed>
+     */
+    private static function integrity_payload(string $message = ''): array
+    {
+        $result  = Security::verify();
+        $changed = array_merge(
+            array_map(static function ($path): string {
+                return 'M ' . (string) $path;
+            }, (array) ($result['modified'] ?? [])),
+            array_map(static function ($path): string {
+                return 'D ' . (string) $path;
+            }, (array) ($result['missing'] ?? []))
+        );
+
+        if ($message === '') {
+            $message = ! empty($result['ok'])
+                ? \__('فایل‌های هسته قالب بدون تغییرند.', BERYON_TD)
+                : \__('برخی فایل‌های هسته قالب تغییر کرده یا حذف شده‌اند.', BERYON_TD);
+        }
+
+        return [
+            'message'  => $message,
+            'total'    => (int) ($result['total'] ?? 0),
+            'modified' => count($changed),
+            'log'      => $changed,
+            'result'   => $result,
+        ];
     }
 
     /**
@@ -696,6 +759,15 @@ final class Updater
             return ['ok' => false, 'message' => \__('هیچ فایل معتبری یافت نشد.', BERYON_TD), 'errors' => $errors];
         }
 
+        // حداقل PHP بسته همان حداقلِ خود قالب است (سربرگ «Requires PHP» در style.css).
+        // پیش‌تر «8.1» سخت‌کد بود و بسته‌ای که خود قالب می‌ساخت روی PHP 7.4 و 8.0 با
+        // خطای «این Patch به PHP 8.1 یا بالاتر نیاز دارد» رد می‌شد.
+        $requires_php = (string) \wp_get_theme(\get_template())->get('RequiresPHP');
+
+        if ($requires_php === '') {
+            $requires_php = '7.4';
+        }
+
         $manifest = [
             'format'       => PatchApplier::FORMAT,
             'theme'        => PatchApplier::THEME,
@@ -708,7 +780,7 @@ final class Updater
             'author'       => (string) ($meta['author'] ?? 'Beryon Web Team'),
             'released_at'  => \gmdate('c'),
             'requires'     => [
-                'php'       => (string) ($meta['requires']['php'] ?? '8.1'),
+                'php'       => (string) ($meta['requires']['php'] ?? $requires_php),
                 'wordpress' => (string) ($meta['requires']['wordpress'] ?? '6.4'),
                 'theme_min' => (string) ($meta['requires']['theme_min'] ?? self::version()),
             ],
@@ -716,14 +788,15 @@ final class Updater
             'post_apply'   => ['flush_rewrites', 'clean_caches', 'refingerprint'],
         ];
 
-        $json = (string) wp_json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-
+        // امضا روی مانیفستِ «بدون کلید signature» محاسبه می‌شود؛ PatchApplier هنگام
+        // اعتبارسنجی همان متن را با signing_payload بازسازی و مقایسه می‌کند.
         $key = (string) Settings::opt('updater.signature_key', '');
 
         if ($key !== '') {
-            $manifest['signature'] = hash_hmac('sha256', $json, $key);
-            $json = (string) wp_json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+            $manifest['signature'] = hash_hmac('sha256', PatchApplier::signing_payload($manifest), $key);
         }
+
+        $json = (string) wp_json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 
         $name = 'beryon-patch-' . $version . '.zip';
         $file = PatchApplier::patches_dir() . '/' . $name;
@@ -837,7 +910,7 @@ final class Updater
             'جریان اجرا: اعتبارسنجی → Stage در uploads/beryon-updater → پشتیبان‌گیری →',
             '            اعمال اتمی (tmp + rename) → post_apply یا بازگردانی خودکار.',
             '',
-            'ساخت بسته:  wp beryon patch build --version 1.1.0 --out /tmp/patch.zip',
+            'ساخت بسته:  wp beryon patch build --version=1.1.0 --dir=app --out=/tmp/patch.zip',
             'اعتبارسنجی: wp beryon patch inspect /tmp/patch.zip',
             'اعمال آزمایشی: wp beryon patch apply /tmp/patch.zip --dry-run',
         ]) . "\n";

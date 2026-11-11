@@ -82,20 +82,73 @@ def inline_css_imports(css, base_dir, seen=None):
     return re.sub(pattern, repl, css)
 
 
+MATH_FUNCTION = re.compile(r'(?<![\w-])(?:calc|clamp|min|max)\(')
+
+
+def protect_math_functions(css, keep):
+    """
+    عبارت‌های calc() / clamp() / min() / max() را پیش از فشرده‌سازی کنار می‌گذارد.
+
+    در این توابع فاصله دو طرف «+» و «-» اجباری است و صفرِ واحددار (0px) را
+    نمی‌توان بی‌واحد کرد. فشرده‌ساز پیشین «calc(var(--header-h) + 46px)» را به
+    «calc(var(--header-h)+46px)» تبدیل می‌کرد که نامعتبر است؛ مرورگر آن اعلان را
+    کنار می‌گذاشت و padding بالای هیروی صفحه اصلی و top نوار کناری چسبان صفر/auto
+    می‌شد. فقط فاصله‌های زائدِ کنار پرانتز و ویرگول برداشته می‌شود.
+    """
+    out = []
+    pos = 0
+
+    while True:
+        match = MATH_FUNCTION.search(css, pos)
+        if not match:
+            out.append(css[pos:])
+            break
+
+        out.append(css[pos:match.start()])
+        depth = 0
+        end = match.end() - 1
+
+        while end < len(css):
+            if css[end] == '(':
+                depth += 1
+            elif css[end] == ')':
+                depth -= 1
+                if depth == 0:
+                    break
+            end += 1
+
+        if depth != 0:  # پرانتز بسته نشده: ادامه متن دست‌نخورده می‌ماند
+            out.append(css[match.start():])
+            break
+
+        expr = css[match.start():end + 1]
+        expr = re.sub(r'\(\s+', '(', expr)
+        expr = re.sub(r'\s+\)', ')', expr)
+        expr = re.sub(r'\s*,\s*', ',', expr)
+        out.append(keep(expr))
+        pos = end + 1
+
+    return ''.join(out)
+
+
 def minify_css(css):
     """
     فشرده‌سازی محافظه‌کار CSS.
 
-    رشته‌ها و محتوای url() پیش از هر تغییری «بیرون کشیده» و با نشانه
-    جایگزین می‌شوند تا data URIها، مسیر فونت‌ها و مقادیر داخل کوتیشن
-    دست‌نخورده بمانند؛ سپس فشرده‌سازی انجام و در پایان بازگردانده می‌شود.
+    رشته‌ها، محتوای url() و عبارت‌های ریاضی (calc و …) پیش از هر تغییری
+    «بیرون کشیده» و با نشانه جایگزین می‌شوند تا data URIها، مسیر فونت‌ها،
+    مقادیر داخل کوتیشن و فاصله‌های اجباری calc() دست‌نخورده بمانند؛ سپس
+    فشرده‌سازی انجام و در پایان بازگردانده می‌شود.
     """
     vault = {}
 
-    def stash(match):
+    def keep(value):
         token = '\x00%d\x00' % len(vault)
-        vault[token] = match.group(0)
+        vault[token] = value
         return token
+
+    def stash(match):
+        return keep(match.group(0))
 
     # ۱) محافظت از url(...) و رشته‌ها
     css = re.sub(r'url\(\s*[^)]*?\s*\)', stash, css)
@@ -104,16 +157,21 @@ def minify_css(css):
     # ۲) حذف توضیحات و فشرده‌سازی
     css = strip_css_comments(css)
     css = re.sub(r'\s+', ' ', css)
+    css = protect_math_functions(css, keep)
     css = re.sub(r'\s*([{}:;,>~+])\s*', r'\1', css)
     css = re.sub(r'(?<![\w.])(0)(?:\.0+)?(px|em|rem|%|cm|mm|in|pt|pc|vh|vw|vmin|vmax|deg|rad|turn)\b', r'\1', css)
     css = re.sub(r'(?<![\w.])\.0+(?=[^\d])', '0', css)
-    css = re.sub(r'\b0 0 0 0\b', '0', css)
+    # «0 0 0 0» فقط وقتی کلِ مقدار یک ویژگی است کوتاه می‌شود (margin:0 0 0 0 ← margin:0).
+    # الگوی پیشین درون پرانتز را هم کوتاه می‌کرد و clip:rect(0 0 0 0) را به مقدار
+    # نامعتبر clip:rect(0) تبدیل می‌کرد (مرورگر آن اعلان را دور می‌ریزد).
+    css = re.sub(r'(?<=:)0 0 0 0(?=[;}!])', '0', css)
     css = css.replace(';}', '}')
     css = css.strip()
 
     # ۳) بازگردانی مقادیر محافظت‌شده (پس از همه تغییرات تا data URI و
     #    url()های فونت دست‌نخورده بمانند)
-    for token, value in vault.items():
+    #    به ترتیب وارونه: عبارت ریاضی ممکن است خودش نشانه url()/رشته داشته باشد.
+    for token, value in reversed(list(vault.items())):
         css = css.replace(token, value)
 
     return css

@@ -5,6 +5,9 @@
   تاریخ) مشترک است تا مارک‌آپ یکسان بماند و فقط عنوان‌ها عوض شوند.
 
   ورودی: $opt_group = کلید گروه تنظیمات («blog» یا «blog_archive»)
+
+  نوشته بدون تصویر: تگ img چاپ نمی‌شود (مثل کارت‌های صفحه اصلی)؛ src خالی
+  نامعتبر است و در مرورگر نشان تصویر شکسته می‌گذارد.
 --}}
   <section class="section" style="padding-top:56px">
     <div class="container">
@@ -12,7 +15,7 @@
       <div class="grid blog-grid">
 @forelse (beryon_query_posts() as $index => $post)
         <article class="blog-card reveal{{ $index % 3 === 1 ? ' d1' : ($index % 3 === 2 ? ' d2' : '') }}">
-          <a class="thumb" href="{{ esc_url($post['link']) }}"><img src="{{ esc_url($post['image']) }}" alt="{{ $post['alt'] }}" loading="lazy"><span class="date">{{ $post['date'] }}</span></a>
+          <a class="thumb" href="{{ esc_url($post['link']) }}">@if ((string) $post['image'] !== '')<img src="{{ esc_url(beryon_img((string) $post['image'])) }}" alt="{{ $post['alt'] }}" loading="lazy">@endif<span class="date">{{ $post['date'] }}</span></a>
           <div class="body">
             <h3><a href="{{ esc_url($post['link']) }}">{{ $post['title'] }}</a></h3>
             <p>{{ $post['excerpt'] }}</p>

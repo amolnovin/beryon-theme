@@ -60,7 +60,7 @@
       <div class="grid blog-grid">
 @foreach ($found_posts as $index => $post)
         <article class="blog-card reveal{{ $index % 3 === 1 ? ' d1' : ($index % 3 === 2 ? ' d2' : '') }}">
-          <a class="thumb" href="{{ esc_url($post['link']) }}"><img src="{{ esc_url($post['image']) }}" alt="{{ $post['alt'] }}" loading="lazy"><span class="date">{{ $post['date'] }}</span></a>
+          <a class="thumb" href="{{ esc_url($post['link']) }}">@if ((string) $post['image'] !== '')<img src="{{ esc_url(beryon_img((string) $post['image'])) }}" alt="{{ $post['alt'] }}" loading="lazy">@endif<span class="date">{{ $post['date'] }}</span></a>
           <div class="body">
             <h3><a href="{{ esc_url($post['link']) }}">{{ $post['title'] }}</a></h3>
             <p>{{ $post['excerpt'] }}</p>

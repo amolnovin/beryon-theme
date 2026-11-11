@@ -30,6 +30,9 @@ final class Products
     /** تاکسونومی داخلی دسته محصول */
     public const TAX = 'product_cat';
 
+    /** گزینه نشانگر «دسته‌های پیش‌فرض یک بار ساخته شده‌اند» */
+    public const TERMS_FLAG = 'beryon_terms_ready';
+
     /** کلیدهای متای محصول */
     public const META = [
         'meat'       => '_beryon_meat_percent',
@@ -55,9 +58,29 @@ final class Products
         \add_action('save_post_product', [self::class, 'save_meta'], 10, 2);
         \add_action('add_meta_boxes', [self::class, 'meta_boxes']);
 
-        // پاک‌سازی حافظه نهان هنگام تغییر محصولات
+        // پاک‌سازی حافظه نهان هنگام تغییر محصولات و نوشته‌ها (save_post برای همه انواع محتوا اجرا می‌شود)
         foreach (['save_post', 'deleted_post', 'wp_insert_term', 'edited_term', 'delete_term'] as $hook) {
             \add_action($hook, [self::class, 'flush_cache']);
+        }
+
+        // تصویر شاخص در ویرایشگر کلاسیک و ویرایش سریع بدون ذخیره نوشته عوض می‌شود (فقط متا).
+        foreach (['added_post_meta', 'updated_post_meta', 'deleted_post_meta'] as $hook) {
+            \add_action($hook, [self::class, 'flush_on_thumbnail'], 10, 3);
+        }
+    }
+
+    /**
+     * پاک‌سازی حافظه نهان با تغییر تصویر شاخص (متای _thumbnail_id).
+     *
+     * @param mixed $meta_id   شناسه (یا شناسه‌های) ردیف متا
+     * @param mixed $object_id شناسه نوشته
+     * @param mixed $meta_key  کلید متا
+     * @return void
+     */
+    public static function flush_on_thumbnail($meta_id, $object_id, $meta_key): void
+    {
+        if ($meta_key === '_thumbnail_id') {
+            self::flush_cache();
         }
     }
 
@@ -168,8 +191,13 @@ final class Products
             );
         }
 
-        // ثبت اصطلاحات پیش‌فرض گروه‌ها
-        self::ensure_terms();
+        // ثبت اصطلاحات پیش‌فرض گروه‌ها — فقط یک بار. پیش‌تر در هر درخواست اجرا
+        // می‌شد (۵ پرس‌وجوی اضافه) و دسته‌ای را که مدیر حذف کرده بود دوباره می‌ساخت.
+        // درون‌ریز داده نمونه (Seeder) هر زمان لازم باشد دسته‌ها را از نو می‌سازد.
+        if (\taxonomy_exists(self::TAX) && ! \get_option(self::TERMS_FLAG)) {
+            self::ensure_terms();
+            \update_option(self::TERMS_FLAG, 1, true);
+        }
     }
 
     /**
@@ -199,7 +227,7 @@ final class Products
     /**
      * کاتالوگ مرجع (داده اولیه قالب که از config/catalog.json خوانده می‌شود).
      *
-     * @return array{categories:array<string,array<string,mixed>>,products:array<int,array<string,mixed>>}
+     * @return array{categories:array<string,array<string,mixed>>,products:array<int,array<string,mixed>>,tags:array<string,string>,archive:array<string,mixed>}
      */
     public static function catalog(): array
     {
@@ -212,9 +240,16 @@ final class Products
         $file = BERYON_PATH . '/config/catalog.json';
         $data = is_readable($file) ? json_decode((string) file_get_contents($file), true) : null;
 
+        // tags (اسلاگ → برچسب فارسی) و archive هم در فایل هستند و مصرف‌کننده دارند
+        // (درون‌ریز محصولات و نمای بایگانی)؛ پیش‌تر دور ریخته می‌شدند.
         $catalog = is_array($data) && isset($data['products'])
-            ? ['categories' => (array) ($data['categories'] ?? []), 'products' => (array) $data['products']]
-            : ['categories' => [], 'products' => []];
+            ? [
+                'categories' => (array) ($data['categories'] ?? []),
+                'products'   => (array) $data['products'],
+                'tags'       => (array) ($data['tags'] ?? []),
+                'archive'    => (array) ($data['archive'] ?? []),
+            ]
+            : ['categories' => [], 'products' => [], 'tags' => [], 'archive' => []];
 
         /**
          * فیلتر کاتالوگ مرجع.
@@ -249,7 +284,9 @@ final class Products
 
         $args = wp_parse_args($args, $defaults);
 
-        $cache_key = 'beryon_products_' . substr(md5(wp_json_encode($args)), 0, 20);
+        // نسخه قالب در کلید: ساختار ردیف‌های کش‌شده بین نسخه‌ها عوض می‌شود و کش
+        // نسخه پیشین نباید پس از به‌روزرسانی خوانده شود.
+        $cache_key = 'beryon_products_' . substr(md5(BERYON_VERSION . '|' . wp_json_encode($args)), 0, 20);
         $cached    = \get_transient($cache_key);
 
         if (is_array($cached)) {
@@ -383,7 +420,9 @@ final class Products
             'image'       => $image,
             'category'    => $term ? (string) $term->slug : '',
             'cat_name'    => $term ? (string) $term->name : '',
+            'cat_short'   => $cat_short,
             'cat_link'    => $term ? (string) \get_term_link($term) : '',
+            'type_label'  => $type_label,
             'meat'        => $meat === '' || $meat === null ? null : (int) \beryon_en_digits((string) $meat),
             'meat_type'   => (string) \get_post_meta($post->ID, self::META['meat_type'], true),
             'unit_weight' => (string) \get_post_meta($post->ID, self::META['unit_weight'], true),
@@ -575,15 +614,20 @@ final class Products
     /**
      * محصولات مرتبط (هم‌دسته).
      *
+     * دقیقاً $limit کارت برمی‌گرداند. پیش‌تر «$limit + 1» درخواست می‌شد، در حالی که محصول
+     * جاری با exclude از پرس‌وجو کنار رفته است؛ در نتیجه با تنظیم پیش‌فرض ۴، پنج کارت چاپ
+     * می‌شد (یک کارت تنها در ردیف دوم؛ طرح مرجع یک ردیف چهارتایی است) و با مقدار ۰ که در
+     * پنل مجاز است، به‌جای پنهان‌شدن بخش، یک کارت دیده می‌شد.
+     *
      * @param \WP_Post|int $post  محصول جاری
-     * @param int          $limit تعداد
+     * @param int          $limit تعداد (۰ = بخش «محصولات مرتبط» نمایش داده نشود)
      * @return array<int,array<string,mixed>>
      */
     public static function related($post, int $limit = 4): array
     {
         $post = \get_post($post);
 
-        if (! $post instanceof \WP_Post) {
+        if (! $post instanceof \WP_Post || $limit < 1) {
             return [];
         }
 
@@ -593,7 +637,7 @@ final class Products
         return self::query(
             [
                 'category' => $slug,
-                'limit'    => $limit + 1,
+                'limit'    => $limit,
                 'exclude'  => [$post->ID],
                 'orderby'  => 'rand',
             ]
@@ -601,7 +645,7 @@ final class Products
     }
 
     /**
-     * پاک‌سازی حافظه نهان محصولات.
+     * پاک‌سازی حافظه نهان محصولات و «آخرین نوشته‌ها».
      *
      * @return void
      */
@@ -611,6 +655,12 @@ final class Products
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_beryon_products_%' OR option_name LIKE '_transient_timeout_beryon_products_%' OR option_name LIKE '_transient_beryon_cats_%' OR option_name LIKE '_transient_timeout_beryon_cats_%'");
+
+        // کش «آخرین نوشته‌ها» (beryon_latest_posts) هم با همین هوک‌ها (ذخیره/حذف نوشته، تغییر
+        // تصویر شاخص) پاک می‌شود؛ پیش‌تر هیچ‌جا پاک نمی‌شد و نوشته یا تصویر شاخص تازه تا یک ساعت
+        // در صفحه اصلی دیده نمی‌شد.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_beryon_posts_%' OR option_name LIKE '_transient_timeout_beryon_posts_%'");
 
         \delete_transient('beryon_products_total');
     }

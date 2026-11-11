@@ -167,7 +167,7 @@
       <div class="grid blog-grid">
 @foreach ($posts as $index => $post)
         <article class="blog-card reveal{{ $index % 3 === 1 ? ' d1' : ($index % 3 === 2 ? ' d2' : '') }}">
-          <a class="thumb" href="{{ esc_url($post['link']) }}">{!! beryon_image_tag((string) $post['image'], ['alt' => (string) $post['alt']]) !!}<span class="date">{{ beryon_fa($post['date']) }}</span></a>
+          <a class="thumb" href="{{ esc_url($post['link']) }}">{!! beryon_image_tag((string) $post['image'], ['alt' => (string) $post['alt'], 'attachment' => (int) ($post['image_id'] ?? 0)]) !!}<span class="date">{{ beryon_fa($post['date']) }}</span></a>
           <div class="body">
             <h3><a href="{{ esc_url($post['link']) }}">{{ $post['title'] }}</a></h3>
             <p>{{ $post['excerpt'] }}</p>

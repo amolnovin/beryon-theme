@@ -9,8 +9,25 @@
  */
 
 /* ---------- الف) هانی‌پات ضدربات (بدون اثر بصری) ---------- */
-.hp-field{position:absolute !important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;left:-9999px;top:-9999px}
+/* فیلد هانی‌پات: فقط با clip پنهان می‌شود. جابه‌جایی ‎left:-9999px‎ در صفحه راست‌به‌چپ پهنای سند را حدود ۱۰٬۰۰۰ پیکسل بزرگ می‌کرد. */
+.hp-field{position:absolute !important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
 .hp-field input{opacity:0}
+
+/* ---------- الف-۲) لوگو در کشوی موبایل، پابرگ، سربرگ و جلد کاتالوگ ---------- */
+/* beryon.css (همسان قالب HTML) برای لوگوی کشو و پابرگ فقط height می‌دهد و در قالب HTML تگ <img> آن‌ها width/height ندارد.
+   در وردپرس تگ تصویر ابعاد دارد؛ بدون width:auto لوگو به پهنای ردیف کشیده می‌شد و دکمه بستن کشو فشرده می‌شد.
+   object-fit:contain و سقف پهنا فقط برای لوگوی دلخواهِ پهن‌تر از جایگاه است؛ روی لوگوی پیش‌فرض اثری ندارد. */
+.mobile-menu .panel-head img{width:auto;min-width:0;max-width:calc(100% - 52px);object-fit:contain}
+.mobile-menu .panel-head .close{flex:none}
+.footer .logo-foot img{width:auto;max-width:100%;object-fit:contain}
+.header .brand img{max-width:240px;object-fit:contain}
+.book .cover img{object-fit:contain}
+/* سربرگ موبایل/تبلت (منو پنهان، دکمه همبرگری): لوگوی دلخواهِ پهن به‌جای بیرون‌راندن دکمه منو از صفحه، کوچک می‌شود. */
+@media (max-width:1020px){
+  .header .brand{flex:0 1 auto;min-width:0}
+  .header .brand img{flex:0 1 auto;min-width:0}
+  .header .brand-text{flex:none}
+}
 
 /* ---------- ب) فرم جست‌وجوی سرور-محور (صفحه جست‌وجو و ۴۰۴) ---------- */
 .search-form{display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:230px;align-items:center}

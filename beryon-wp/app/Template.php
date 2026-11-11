@@ -361,7 +361,12 @@ final class Template
             $candidates[] = 'woocommerce/myaccount/my-account';
         }
 
-        $candidates[] = 'singular';
+        // نمای عمومی محتوای تکی فقط برای درخواست‌های تکی نامزد می‌شود؛ در غیر
+        // این صورت یک بایگانی بدون نما به‌جای index به singular می‌افتاد.
+        if (\is_singular()) {
+            $candidates[] = 'singular';
+        }
+
         $candidates[] = 'index';
 
         /**

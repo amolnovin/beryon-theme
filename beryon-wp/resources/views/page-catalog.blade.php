@@ -17,7 +17,6 @@
   }
 
   $flipbook = (string) beryon_opt('catalog.flipbook_url', '');
-  $logo     = (string) beryon_opt('general.logo_file', 'logo.png');
 @endphp
   <section class="page-hero">
     <div class="container">
@@ -36,7 +35,7 @@
       <div class="catalog-wrap">
         <div class="book reveal">
           <div class="cover">
-            {!! beryon_image_tag($logo, ['alt' => 'لوگوی ' . beryon_opt('general.brand_name') . ' روی جلد کاتالوگ']) !!}
+            {!! beryon_logo_tag(['alt' => 'لوگوی ' . beryon_opt('general.brand_name') . ' روی جلد کاتالوگ', 'width' => 117, 'height' => 88]) !!}
             <div class="t"><b>{{ beryon_opt('catalog.cover_title') }}</b><small>{{ beryon_opt('catalog.cover_sub') }}</small></div>
             <span class="yr">{{ beryon_tokens((string) beryon_opt('catalog.cover_year')) }}</span>
           </div>

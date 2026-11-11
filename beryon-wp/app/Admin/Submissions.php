@@ -136,7 +136,10 @@ final class Submissions
         $where_sql = implode(' AND ', $where);
 
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-        $total = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where_sql}", $params)); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        // بدون فیلتر، شرط فقط «1=1» است و جای‌نگهداری ندارد؛ prepare() در این حالت
+        // اخطار «must have a placeholder» ثبت می‌کرد.
+        $count_sql = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}";
+        $total     = (int) $wpdb->get_var($params !== [] ? $wpdb->prepare($count_sql, $params) : $count_sql); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
         if ($params !== []) {
             $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d", array_merge($params, [$per, $offset])), ARRAY_A);

@@ -146,12 +146,20 @@ function beryon_rows(string $key, array $default = []): array
         return $default;
     }
 
-    // ردیف‌های خالی (حذف‌شده در UI) کنار گذاشته می‌شوند.
+    // ردیف‌های خالی (حذف‌شده در UI) کنار گذاشته می‌شوند. ردیف می‌تواند آرایه
+    // (تکرارشونده) یا رشته ساده (فهرست‌های «هر خط یک مورد») باشد؛ پیش‌تر رشته‌ها
+    // هم دور ریخته می‌شدند و فهرست‌هایی مثل «انواع فروش» همیشه خالی بود.
     $rows = array_values(
         array_filter(
             $rows,
             /** @param mixed $row */
-            static fn ($row): bool => is_array($row) && array_filter($row, static fn ($v) => $v !== '' && $v !== null) !== []
+            static function ($row): bool {
+                if (is_array($row)) {
+                    return array_filter($row, static fn ($v) => $v !== '' && $v !== null) !== [];
+                }
+
+                return is_scalar($row) && trim((string) $row) !== '';
+            }
         )
     );
 
@@ -220,31 +228,93 @@ function beryon_image(string $name, array $args = []): void
 }
 
 /**
- * URL لوگو (تنظیم قالب → custom-logo → دارایی قالب).
+ * شناسه پیوست لوگوی انتخاب‌شده: «هویت سایت» سفارشی‌ساز (custom_logo) و سپس
+ * تنظیم قالب (general.logo_id). صفر یعنی لوگوی پیش‌فرض قالب استفاده شود.
+ *
+ * @return int
+ */
+function beryon_logo_id(): int
+{
+    $candidates = [
+        (int) get_theme_mod('custom_logo'),
+        (int) Settings::opt('general.logo_id', 0),
+    ];
+
+    foreach ($candidates as $id) {
+        if ($id > 0 && wp_attachment_is_image($id) && wp_get_attachment_image_url($id, 'full')) {
+            return $id;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * URL لوگو (custom-logo → تنظیم قالب → فایل لوگوی قالب).
  *
  * @return string
  */
 function beryon_logo_url(): string
 {
-    $custom = get_theme_mod('custom_logo');
+    $id = beryon_logo_id();
 
-    if ($custom) {
-        $src = wp_get_attachment_image_url((int) $custom, 'full');
-        if ($src) {
-            return $src;
+    if ($id > 0) {
+        return (string) wp_get_attachment_image_url($id, 'full');
+    }
+
+    return Assets::image_url((string) Settings::opt('general.logo_file', 'logo.png'));
+}
+
+/**
+ * تگ <img> لوگو برای سربرگ، کشوی موبایل، پابرگ و جلد کاتالوگ.
+ *
+ * ابعاد چاپ‌شده همیشه با نسبت تصویر واقعی محاسبه می‌شود — چه لوگو از کتابخانه
+ * رسانه انتخاب شده باشد، چه فایل پیش‌فرض قالب (general.logo_file) باشد:
+ *  - height داده شده  ← width از روی نسبت واقعی (مقدار width ورودی فقط وقتی به‌کار
+ *    می‌رود که ابعاد واقعی تصویر معلوم نباشد)؛
+ *  - فقط width         ← height از روی نسبت واقعی؛
+ *  - هیچ‌کدام          ← ابعاد واقعی تصویر.
+ *
+ * فراخوان باید «ارتفاع نمایش» همان جایگاه را بدهد (سربرگ ۵۶، کشو ۴۶، پابرگ ۵۴، جلد
+ * کاتالوگ ۸۸ پیکسل؛ مطابق beryon.css). بدون آن، تگ با ابعاد کامل فایل (مثلاً ۵۰۴×۳۸۰)
+ * چاپ می‌شد و در جایگاه‌هایی که CSS فقط height می‌دهد لوگو به پهنای ردیف کشیده می‌شد.
+ *
+ * @param array<string,mixed> $args alt,width,height,lazy,class,…
+ * @return string
+ */
+function beryon_logo_tag(array $args = []): string
+{
+    $id  = beryon_logo_id();
+    $src = $id > 0 ? wp_get_attachment_image_src($id, 'full') : false;
+
+    if (is_array($src) && ! empty($src[0])) {
+        $name        = (string) $src[0];
+        $real_width  = (int) ($src[1] ?? 0);
+        $real_height = (int) ($src[2] ?? 0);
+
+        $args['attachment'] = $id;
+    } else {
+        $name = (string) Settings::opt('general.logo_file', 'logo.png');
+        $real = Assets::dimensions($name, Assets::is_absolute_url(trim($name)) ? 0 : Assets::attachment_by_name($name));
+
+        $real_width  = (int) $real[0];
+        $real_height = (int) $real[1];
+    }
+
+    if ($real_width > 0 && $real_height > 0) {
+        if (! empty($args['height'])) {
+            $args['height'] = (int) $args['height'];
+            $args['width']  = max(1, (int) round($args['height'] * $real_width / $real_height));
+        } elseif (! empty($args['width'])) {
+            $args['width']  = (int) $args['width'];
+            $args['height'] = max(1, (int) round($args['width'] * $real_height / $real_width));
+        } else {
+            $args['width']  = $real_width;
+            $args['height'] = $real_height;
         }
     }
 
-    $option = Settings::opt('general.logo_id', 0);
-
-    if ($option) {
-        $src = wp_get_attachment_image_url((int) $option, 'full');
-        if ($src) {
-            return $src;
-        }
-    }
-
-    return Assets::image_url('logo.png');
+    return Assets::image_tag($name, $args);
 }
 
 /* ================================================================== *
@@ -348,6 +418,21 @@ function beryon_svg(string $name, array $args = []): void
 }
 
 /**
+ * همان beryon_svg ولی به‌صورت رشته (برای جاهایی که HTML باید برگردانده شود).
+ *
+ * @param string              $name نام آیکون
+ * @param array<string,mixed> $args گزینه‌ها
+ * @return string
+ */
+function beryon_svg_html(string $name, array $args = []): string
+{
+    ob_start();
+    beryon_svg($name, $args);
+
+    return (string) ob_get_clean();
+}
+
+/**
  * چاپ یک آیکون از اسپرایت SVG (به‌جای <svg> درون‌خطی).
  *
  * @param string              $name نام آیکون
@@ -401,10 +486,15 @@ function beryon_icon(string $name, array $args = []): void
 }
 
 /**
- * نویگیشن اصلی: wp_nav_menu در صورت وجود، وگرنه منوی پیش‌فرض قالب.
+ * نویگیشن قالب: منوی وردپرس در صورت وجود، وگرنه منوی پیش‌فرض قالب.
+ *
+ * هر سه حالت (سربرگ دسکتاپ، کشوی موبایل، پانوشت) از همان منویی ساخته می‌شوند که
+ * در «نمایش ← فهرست‌ها» به مکان موردنظر نسبت داده شده است؛ خروجی فقط خودِ آیتم‌هاست
+ * (بدون <ul>) چون ظرف را خودِ نما چاپ می‌کند.
  *
  * @param string $location مکان منو (primary|footer_quick|footer_cats)
- * @param string $active   کلید صفحه فعال برای aria-current
+ * @param string $active   کلید صفحه فعال برای برجسته‌سازی
+ * @param string $mode     desktop|mobile|footer
  * @return string
  */
 function beryon_nav(string $location = 'primary', string $active = '', string $mode = 'desktop'): string
@@ -412,21 +502,21 @@ function beryon_nav(string $location = 'primary', string $active = '', string $m
     $locations = (array) get_nav_menu_locations();
     $assigned  = isset($locations[$location]) ? (int) $locations[$location] : 0;
 
-    // اگر کاربر منوی دلخواهی به این مکان نسبت داده باشد، همان منو با Walker قالب
-    // رندر می‌شود؛ در غیر این‌صورت منوی پیش‌فرض قالب با مارک‌آپ دقیقاً مطابق
-    // قالب HTML نهایی چاپ می‌شود (بدون کلاس‌های اضافی وردپرس).
-    if ($assigned > 0 && $mode !== 'mobile') {
+    // اگر کاربر منویی به این مکان نسبت داده باشد، همان منو با Walker قالب رندر
+    // می‌شود؛ در غیر این‌صورت (یا اگر منو خالی باشد) منوی پیش‌فرض قالب با مارک‌آپ
+    // دقیقاً مطابق قالب HTML نهایی چاپ می‌شود.
+    if ($assigned > 0) {
         $menu = wp_nav_menu(
             [
-                'theme_location' => $location,
-                'container'      => false,
-                'menu_class'     => $location === 'primary' ? 'nav' : '',
-                'fallback_cb'    => false,
-                'echo'           => false,
-                'depth'          => 2,
-                'walker'         => new App\NavWalker(),
-                'items_wrap'     => $location === 'primary' ? '%3$s' : '<ul>%3$s</ul>',
-                'beryon_mobile'  => false,
+                'theme_location'    => $location,
+                'container'         => false,
+                'fallback_cb'       => false,
+                'echo'              => false,
+                'depth'             => $mode === 'footer' ? 1 : 2,
+                'walker'            => new App\NavWalker(),
+                'items_wrap'        => '%3$s',
+                'beryon_mode'       => $mode,
+                'beryon_active_url' => $mode === 'footer' ? '' : App\Nav::section_url($active),
             ]
         );
 
@@ -461,6 +551,16 @@ function beryon_active_nav(): string
     }
 
     $template = is_singular('page') ? (string) get_page_template_slug(get_the_ID()) : '';
+
+    // برگه‌ای که نمایش از روی نامکش انتخاب می‌شود (مثل contact-us ← page-contact-us)
+    // متای قالب ندارد؛ بدون این، «تماس با ما» روی صفحه خودش برجسته نمی‌شد.
+    if ($template === '' && is_singular('page')) {
+        $beryon_slug = (string) get_post_field('post_name', get_queried_object_id());
+
+        if ($beryon_slug !== '' && is_readable(BERYON_PATH . '/resources/views/page-' . $beryon_slug . '.blade.php')) {
+            $template = 'page-' . $beryon_slug;
+        }
+    }
 
     // به‌جای match (فقط PHP 8) از زنجیره if استفاده می‌شود تا قالب روی
     // PHP 7.4 هم کار کند.
@@ -629,6 +729,12 @@ function beryon_post_content(int $post_id): string
         return '';
     }
 
+    // محتوای رمزدار: تا وارد نشدن رمز فقط فرم رمز وردپرس نمایش داده می‌شود
+    // (خواندن مستقیم post_content این محافظت را دور می‌زد).
+    if (post_password_required($post)) {
+        return (string) get_the_password_form($post);
+    }
+
     $content = (string) apply_filters('the_content', $post->post_content);
 
     /**
@@ -700,8 +806,12 @@ function beryon_pagination(): string
             'mid_size'  => 1,
             'end_size'  => 1,
             'type'      => 'list',
-            'prev_text' => beryon_svg('chevron-left', ['width' => 16, 'attr' => ['aria-hidden' => 'true']]),
-            'next_text' => beryon_svg('chevron-left', ['width' => 16, 'attr' => ['aria-hidden' => 'true', 'style' => 'transform:scaleX(-1)']]),
+            // beryon_svg خروجی را چاپ می‌کند و چیزی برنمی‌گرداند؛ پیش‌تر آیکون‌ها
+            // بیرون از صفحه‌بندی چاپ می‌شدند و پیوندهای قبلی/بعدی خالی می‌ماندند.
+            'prev_text' => beryon_svg_html('chevron-left', ['width' => 16, 'attr' => ['aria-hidden' => 'true']])
+                . '<span class="sr-only">' . esc_html__('صفحه قبلی', BERYON_TD) . '</span>',
+            'next_text' => beryon_svg_html('chevron-left', ['width' => 16, 'attr' => ['aria-hidden' => 'true', 'style' => 'transform:scaleX(-1)']])
+                . '<span class="sr-only">' . esc_html__('صفحه بعدی', BERYON_TD) . '</span>',
         ]
     );
 
@@ -897,7 +1007,9 @@ function beryon_product_gallery(int $post_id): array
  */
 function beryon_product_crumb(string $title): string
 {
-    if (preg_match('/[\(\u{066C}\(]([^\)\)]{2,40})[\)\)]/u', $title, $match) === 1) {
+    // پرانتز لاتین یا تمام‌عرض (U+FF08/U+FF09). الگوی پیشین «\u{…}» داشت که در
+    // PCRE نامعتبر است و در PHP 8 هشدار «Compilation failed» می‌داد.
+    if (preg_match('/[(\x{FF08}]([^)\x{FF09}]{2,40})[)\x{FF09}]/u', $title, $match) === 1) {
         $inner = trim((string) $match[1]);
 
         if ($inner !== '') {
@@ -919,7 +1031,9 @@ function beryon_product_crumb(string $title): string
  */
 function beryon_latest_posts(int $limit = 3, string $excerpt_key = 'home_excerpt'): array
 {
-    $cache_key = 'beryon_posts_' . $limit . '_' . $excerpt_key;
+    // نسخه قالب در کلید: ساختار کارت‌های کش‌شده بین نسخه‌ها عوض می‌شود. این کش با
+    // ذخیره/حذف هر نوشته و تغییر تصویر شاخص در Products::flush_cache() پاک می‌شود.
+    $cache_key = 'beryon_posts_' . $limit . '_' . $excerpt_key . '_' . BERYON_VERSION;
     $cached    = get_transient($cache_key);
 
     if (is_array($cached)) {
@@ -963,30 +1077,55 @@ function beryon_post_card($post, string $excerpt_key = 'home_excerpt'): array
         return [];
     }
 
-    $image = (string) get_post_meta($post->ID, '_beryon_image', true);
-    $alt   = (string) get_post_meta($post->ID, '_beryon_image_alt', true);
+    // ۱) تصویر شاخص نوشته (انتخاب مدیر سایت) مقدم است؛ ۲) در نبود آن، نام فایل
+    // تصویر نمونه در پوشه قالب (متای درون‌ریز). مقدار «image» یا نشانی کامل است
+    // یا نام فایل؛ نماها آن را با beryon_img()/beryon_image_tag() چاپ می‌کنند.
+    $image    = '';
+    $image_id = 0;
+    $alt      = (string) get_post_meta($post->ID, '_beryon_image_alt', true);
 
-    if ($image === '' && has_post_thumbnail($post)) {
-        $image = (string) wp_get_attachment_url((int) get_post_thumbnail_id($post));
+    if (has_post_thumbnail($post)) {
+        $thumbnail = (int) get_post_thumbnail_id($post);
+        $image     = (string) wp_get_attachment_image_url($thumbnail, 'large');
+
+        if ($image === '') {
+            $image = (string) wp_get_attachment_url($thumbnail);
+        }
+
+        if ($image !== '') {
+            $image_id      = $thumbnail;
+            $thumbnail_alt = trim((string) get_post_meta($thumbnail, '_wp_attachment_image_alt', true));
+
+            if ($thumbnail_alt !== '') {
+                $alt = $thumbnail_alt;
+            }
+        }
     }
 
-    $excerpt = (string) $post->post_excerpt;
+    if ($image === '') {
+        $image = (string) get_post_meta($post->ID, '_beryon_image', true);
+    }
 
-    if ($excerpt === '') {
+    // نوشته رمزدار: متن آن نباید در کارت‌ها، جست‌وجو یا سربرگ صفحه دیده شود.
+    $locked  = post_password_required($post);
+    $excerpt = $locked ? '' : (string) $post->post_excerpt;
+
+    if ($excerpt === '' && ! $locked) {
         $excerpt = beryon_excerpt_text(wp_strip_all_tags((string) $post->post_content), 150);
     }
 
     return [
-        'id'      => $post->ID,
-        'title'   => get_the_title($post),
-        'link'    => (string) get_permalink($post),
-        'image'   => $image,
-        'alt'     => $alt !== '' ? $alt : get_the_title($post),
-        'date'    => beryon_post_jalali_date($post),
-        'excerpt' => $excerpt,
-        'content' => (string) $post->post_content,
-        'minutes' => beryon_read_minutes((string) $post->post_content),
-        'author'  => (string) Settings::opt('blog.author_label', ''),
+        'id'       => $post->ID,
+        'title'    => get_the_title($post),
+        'link'     => (string) get_permalink($post),
+        'image'    => $image,
+        'image_id' => $image_id,
+        'alt'      => $alt !== '' ? $alt : get_the_title($post),
+        'date'     => beryon_post_jalali_date($post),
+        'excerpt'  => $excerpt,
+        'content'  => $locked ? '' : (string) $post->post_content,
+        'minutes'  => beryon_read_minutes((string) $post->post_content),
+        'author'   => (string) Settings::opt('blog.author_label', ''),
     ];
 }
 

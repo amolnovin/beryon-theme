@@ -108,13 +108,39 @@ final class MiniBlade
     {
         $relative = str_replace('.', '/', $view) . '.blade.php';
 
-        foreach (self::$paths as $path) {
+        foreach (self::searchPaths() as $path) {
             if (is_readable($path . '/' . $relative)) {
                 return $path . '/' . $relative;
             }
         }
 
         return '';
+    }
+
+    /**
+     * مسیرهای جست‌وجو به‌همراه مسیر پیش‌فرض نماهای قالب.
+     *
+     * پوشه resources/views قالب همیشه (با کمترین اولویت) جزو مسیرهاست، حتی
+     * اگر هنوز addPath() صدا زده نشده باشد. پیش‌تر مسیرها فقط هنگام نخستین
+     * رندر (Acorn::view/page) ثبت می‌شدند؛ در نتیجه Template::resolve() که
+     * پیش از رندر find() را صدا می‌زند هیچ نمایی پیدا نمی‌کرد و همه نشانی‌ها
+     * به نمای index (فهرست وبلاگ) برمی‌گشتند.
+     *
+     * @return array<int,string>
+     */
+    private static function searchPaths(): array
+    {
+        $paths = self::$paths;
+
+        if (defined('BERYON_PATH')) {
+            $default = rtrim((string) BERYON_PATH, '/') . '/resources/views';
+
+            if (! in_array($default, $paths, true)) {
+                $paths[] = $default;
+            }
+        }
+
+        return $paths;
     }
 
     /**

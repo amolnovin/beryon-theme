@@ -51,6 +51,9 @@ EXTRA_VIEWS = [
     'archive.blade.php',        # بایگانی دسته/برچسب/تاریخ
     'search.blade.php',         # نتایج جست‌وجو
     '404.blade.php',            # خطای ۴۰۴
+    'page.blade.php',           # برگه عمومی (برگه‌های بدون نمای اختصاصی)
+    'singular.blade.php',       # نوع محتوای سفارشی بدون نمای اختصاصی
+    'partials/entry.blade.php', # بدنه مشترک page/singular
     'partials/blog-list.blade.php',
     'woocommerce/cart.blade.php',
     'woocommerce/checkout.blade.php',

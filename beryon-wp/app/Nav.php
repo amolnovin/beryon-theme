@@ -101,6 +101,48 @@ final class Nav
     }
 
     /**
+     * آدرس آیتم سطح اولِ یک «بخش فعال» (home|products|about|blog|…).
+     *
+     * NavWalker با آن آیتم هم‌آدرسِ منوی وردپرس را برجسته می‌کند تا رفتار منوی
+     * ساخته‌شده در «نمایش ← فهرست‌ها» با منوی پیش‌فرض قالب یکی باشد.
+     *
+     * @param string $key کلید بخش (خروجی beryon_active_nav)
+     * @return string آدرس یا رشته خالی
+     */
+    public static function section_url(string $key): string
+    {
+        static $cache = [];
+
+        if ($key === '') {
+            return '';
+        }
+
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+
+        $url = '';
+
+        foreach (self::items('primary') as $item) {
+            if ((string) ($item['key'] ?? '') === $key) {
+                $url = (string) $item['url'];
+
+                break;
+            }
+        }
+
+        // beryon_page_url برای صفحه‌ای که وجود ندارد نشانی خانه را می‌دهد؛ در آن
+        // حالت نباید «خانه» به‌جای بخش واقعی برجسته شود.
+        if ($key !== 'home' && \untrailingslashit($url) === \untrailingslashit(\home_url('/'))) {
+            $url = '';
+        }
+
+        $cache[$key] = $url;
+
+        return $url;
+    }
+
+    /**
      * رندر آیتم‌ها.
      *
      * @param array<int,array<string,mixed>> $items    آیتم‌ها

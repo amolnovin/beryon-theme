@@ -10,7 +10,7 @@
   <div class="container">
     <div class="grid">
       <div>
-        <span class="logo-foot">{!! beryon_image_tag(beryon_opt('general.logo_file', 'logo.png'), ['alt' => 'لوگوی ' . beryon_opt('general.brand_name')]) !!}</span>
+        <span class="logo-foot">{!! beryon_logo_tag(['alt' => 'لوگوی ' . beryon_opt('general.brand_name'), 'width' => 72, 'height' => 54]) !!}</span>
         <p>{!! beryon_tokens((string) beryon_opt('general.footer_text')) !!}</p>
         <div class="socials">
 @foreach ((array) beryon_opt('general.socials', []) as $social)
