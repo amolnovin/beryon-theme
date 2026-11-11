@@ -361,7 +361,7 @@ final class Cli
                 $paths = $this->collect_paths($args, $assoc_args);
 
                 if ($paths === []) {
-                    \WP_CLI::error('مسیر یا پوشه‌ای برای بسته‌بندی پیدا نشد. مثال: wp beryon patch build 1.1.0 --dir=app');
+                    \WP_CLI::error('مسیر یا پوشه‌ای برای بسته‌بندی پیدا نشد. مثال: wp beryon patch build --version=1.1.0 --dir=app');
                 }
 
                 $result = Updater::create($paths, $version, [

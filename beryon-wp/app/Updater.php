@@ -910,7 +910,7 @@ final class Updater
             'جریان اجرا: اعتبارسنجی → Stage در uploads/beryon-updater → پشتیبان‌گیری →',
             '            اعمال اتمی (tmp + rename) → post_apply یا بازگردانی خودکار.',
             '',
-            'ساخت بسته:  wp beryon patch build --version 1.1.0 --out /tmp/patch.zip',
+            'ساخت بسته:  wp beryon patch build --version=1.1.0 --dir=app --out=/tmp/patch.zip',
             'اعتبارسنجی: wp beryon patch inspect /tmp/patch.zip',
             'اعمال آزمایشی: wp beryon patch apply /tmp/patch.zip --dry-run',
         ]) . "\n";

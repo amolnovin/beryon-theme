@@ -879,7 +879,7 @@ final class SettingsPage
         echo '<pre class="beryon-code" dir="ltr">wp beryon seed --force
 wp beryon options reset --yes
 wp beryon cache flush
-wp beryon patch build --version 1.1.0 --out /tmp/patch.zip
+wp beryon patch build --version=1.1.0 --dir=app --out=/tmp/patch.zip
 wp beryon patch apply /tmp/patch.zip --dry-run
 wp beryon integrity</pre>';
         echo '</div>';
