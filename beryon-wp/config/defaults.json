@@ -204,6 +204,7 @@
   "products": {
     "source": "auto",
     "default_image": "cat-sausage.webp",
+    "main_parent": "",
     "grid_limit": 60,
     "paginate": false,
     "per_page": 24,

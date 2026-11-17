@@ -12,7 +12,7 @@
 @section('content')
 @php
   $products = \App\Products::query(['limit' => (int) beryon_opt('products.grid_limit', 60)]);
-  $chips    = (array) beryon_opt('products.archive_chips', []);
+  $chips    = \App\Products::archive_chips();
   $catalog  = \App\Products::catalog()['archive'] ?? [];
   $crumb    = (string) beryon_opt('products.archive_crumb', $catalog['crumb'] ?? 'محصولات');
   $lead     = (string) beryon_opt('products.archive_lead', $catalog['hero_p'] ?? '');

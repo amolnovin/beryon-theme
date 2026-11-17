@@ -13,7 +13,7 @@
   $entry_id    = (int) get_queried_object_id();
   $entry_title = (string) get_the_title($entry_id);
   $entry_type  = get_post_type_object((string) get_post_type($entry_id));
-  $entry_lead  = post_password_required($entry_id) ? '' : trim((string) get_post_field('post_excerpt', $entry_id));
+  $entry_lead  = post_password_required($entry_id) ? '' : beryon_plain_excerpt((string) get_post_field('post_excerpt', $entry_id));
   $crumbs      = [['label' => 'خانه', 'url' => home_url('/')]];
 
   // بایگانی نوع محتوا (برای انواع سفارشی دارای بایگانی)

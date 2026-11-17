@@ -1033,22 +1033,26 @@ function beryon_latest_posts(int $limit = 3, string $excerpt_key = 'home_excerpt
 {
     // نسخه قالب در کلید: ساختار کارت‌های کش‌شده بین نسخه‌ها عوض می‌شود. این کش با
     // ذخیره/حذف هر نوشته و تغییر تصویر شاخص در Products::flush_cache() پاک می‌شود.
-    $cache_key = 'beryon_posts_' . $limit . '_' . $excerpt_key . '_' . BERYON_VERSION;
+    // زبان جاری هم جزو کلید است: روی سایت چندزبانه نوشته‌های هر زبان جدا کش می‌شود.
+    $cache_key = 'beryon_posts_' . $limit . '_' . $excerpt_key . '_' . BERYON_VERSION . (App\Lang::cache_key() !== '' ? '_' . App\Lang::cache_key() : '');
     $cached    = get_transient($cache_key);
 
     if (is_array($cached)) {
         return $cached;
     }
 
+    // فقط نوشته‌های زبان جاری (Polylang خودش فیلتر می‌کند؛ در نبود آن App\Lang).
     $query = new WP_Query(
-        [
-            'post_type'              => 'post',
-            'post_status'            => 'publish',
-            'posts_per_page'         => max(1, $limit),
-            'no_found_rows'          => true,
-            'update_post_term_cache' => false,
-            'ignore_sticky_posts'    => true,
-        ]
+        App\Lang::query_args(
+            [
+                'post_type'              => 'post',
+                'post_status'            => 'publish',
+                'posts_per_page'         => max(1, $limit),
+                'no_found_rows'          => true,
+                'update_post_term_cache' => false,
+                'ignore_sticky_posts'    => true,
+            ]
+        )
     );
 
     $items = [];
@@ -1108,7 +1112,7 @@ function beryon_post_card($post, string $excerpt_key = 'home_excerpt'): array
 
     // نوشته رمزدار: متن آن نباید در کارت‌ها، جست‌وجو یا سربرگ صفحه دیده شود.
     $locked  = post_password_required($post);
-    $excerpt = $locked ? '' : (string) $post->post_excerpt;
+    $excerpt = $locked ? '' : beryon_plain_excerpt((string) $post->post_excerpt);
 
     if ($excerpt === '' && ! $locked) {
         $excerpt = beryon_excerpt_text(wp_strip_all_tags((string) $post->post_content), 150);
@@ -1127,6 +1131,47 @@ function beryon_post_card($post, string $excerpt_key = 'home_excerpt'): array
         'minutes'  => beryon_read_minutes((string) $post->post_content),
         'author'   => (string) Settings::opt('blog.author_label', ''),
     ];
+}
+
+/**
+ * چکیده دستیِ نوشته به‌صورت متن ساده.
+ *
+ * چکیده‌ای که مدیر نوشته همان‌طور که هست چاپ می‌شود؛ ولی اگر در فیلد چکیده HTML
+ * گذاشته شده باشد (مثلاً بخش آغازین مقاله با دکمه و نشان)، تگ‌ها به‌شکل متن روی
+ * کارت دیده می‌شدند. در این حالت متن نخستین بند (‎<p>‎) برداشته و کوتاه می‌شود.
+ *
+ * @param string $excerpt مقدار post_excerpt
+ * @param int    $length  حداکثر نویسه برای چکیده‌ای که HTML داشته
+ * @return string
+ */
+function beryon_plain_excerpt(string $excerpt, int $length = 220): string
+{
+    $excerpt = trim($excerpt);
+
+    if ($excerpt === '' || strpos($excerpt, '<') === false) {
+        return $excerpt;
+    }
+
+    $text = '';
+
+    if (preg_match_all('/<p\b[^>]*>(.*?)<\/p>/is', $excerpt, $paragraphs)) {
+        foreach ($paragraphs[1] as $paragraph) {
+            $candidate = trim(html_entity_decode(wp_strip_all_tags($paragraph), ENT_QUOTES, 'UTF-8'));
+
+            if (mb_strlen($candidate) >= 40) {
+                $text = $candidate;
+
+                break;
+            }
+        }
+    }
+
+    if ($text === '') {
+        // تگ‌ها با فاصله جایگزین می‌شوند تا متن دو عنصر کنار هم به هم نچسبد.
+        $text = html_entity_decode(wp_strip_all_tags((string) preg_replace('/<[^>]+>/', ' ', $excerpt)), ENT_QUOTES, 'UTF-8');
+    }
+
+    return beryon_excerpt_text($text, $length);
 }
 
 /**

@@ -251,7 +251,7 @@ final class Seo
                 // و JSON-LD) فاش شود؛ توضیح عمومی سایت جایگزین می‌شود.
                 if ($post instanceof \WP_Post && ! \post_password_required($post)) {
                     $description = $post->post_excerpt !== ''
-                        ? \beryon_excerpt_text($post->post_excerpt, 165)
+                        ? \beryon_excerpt_text(\beryon_plain_excerpt((string) $post->post_excerpt, 165), 165)
                         : \beryon_excerpt_text((string) $post->post_content, 165);
                 }
             }
@@ -1030,6 +1030,8 @@ final class Seo
                 'order'          => 'DESC',
                 'no_found_rows'  => false,
                 'fields'         => 'ids',
+                // نقشه سایت همه زبان‌ها را فهرست می‌کند (lang = '' فیلتر زبان Polylang را کنار می‌گذارد).
+                'lang'           => '',
             ]
         );
 
@@ -1051,10 +1053,10 @@ final class Seo
             $urls[] = $entry;
         }
 
-        // دسته‌های محصولات
+        // دسته‌های محصولات — همه زبان‌ها (Products::categories() فقط زبان جاری را می‌دهد)
         if ($page === 1) {
-            foreach (Products::categories() as $category) {
-                $urls[] = ['loc' => (string) $category['link'], 'priority' => '0.8', 'changefreq' => 'weekly'];
+            foreach (Products::category_links() as $link) {
+                $urls[] = ['loc' => $link, 'priority' => '0.8', 'changefreq' => 'weekly'];
             }
         }
 

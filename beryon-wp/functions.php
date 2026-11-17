@@ -160,7 +160,7 @@ if (preg_match('/^Version:\s*(.+)$/mi', $beryon_style_head, $beryon_version_matc
     $beryon_version_match = '';
 }
 
-define('BERYON_VERSION', $beryon_version_match !== '' ? $beryon_version_match : '1.0.4');
+define('BERYON_VERSION', $beryon_version_match !== '' ? $beryon_version_match : '1.0.5');
 unset($beryon_style_head, $beryon_version_match);
 
 /** دامنه متنی */
@@ -209,6 +209,7 @@ require_once BERYON_PATH . '/app/helpers.php';
 $beryon_modules = [
     App\Setup::class,      // پشتیبانی‌های قالب، منوها، اندازه تصاویر، سلسله‌مراتب Blade
     App\Assets::class,     // صف استایل/اسکریپت، فونت، preload، مسیر تصاویر
+    App\Lang::class,       // زبان جاری و زبان دسته‌ها/نوشته‌ها (Polylang فعال یا فقط داده آن)
     App\Products::class,   // CPT/تاکسونومی محصول، داده نرمال‌شده، Caching
     App\Seo::class,        // متا، اسکیما، سایت‌map، متاباکس سئو
     App\Forms::class,      // REST فرم‌ها، جدول پیام‌ها، کد پیگیری

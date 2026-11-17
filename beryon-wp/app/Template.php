@@ -396,7 +396,7 @@ final class Template
             'nav_quick' => Nav::items('footer_quick'),
             'nav_cats'  => Nav::items('footer_cats'),
             'active'    => \beryon_active_nav(),
-            'categories' => Products::categories(),
+            'categories' => Products::main_categories(),
             'total'     => Products::total_count(),
             'is_rtl'    => \is_rtl(),
             'site_name' => (string) \get_bloginfo('name'),

@@ -97,3 +97,10 @@ img.is-loaded{animation:beryon-fade .45s ease both}
 @media (prefers-reduced-motion:reduce){
   img.is-loaded,.share-row a.is-copied svg{animation:none}
 }
+
+/* ---------- ی) صفحه‌های چپ‌به‌راست (زبان LTR در سایت چندزبانه؛ مثلاً انگلیسی) ----------
+   چیدمان قالب با ویژگی‌های منطقی (inline-start/end) نوشته شده و با dir="ltr" خودش قرینه
+   می‌شود؛ فقط پیکان‌هایی که برای راست‌به‌چپ برگردانده شده‌اند باید به حالت اصلی برگردند. */
+[dir="ltr"] .cat-card .go svg,[dir="ltr"] .product-card .more svg,[dir="ltr"] .blog-card .more svg,[dir="ltr"] .breadcrumb svg{transform:none}
+[dir="ltr"] .product-card:hover .more svg{transform:translateX(5px)}
+[dir="ltr"] .catalog-list li:hover{transform:translateX(6px)}

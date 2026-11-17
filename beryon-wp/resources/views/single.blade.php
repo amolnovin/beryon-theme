@@ -25,7 +25,7 @@
         ['label' => beryon_excerpt_text(get_the_title(), 40)],
       ]])
       <h1>{{ get_the_title() }}</h1>
-      <p>{{ post_password_required($post_id) ? '' : beryon_excerpt_text(wp_strip_all_tags((string) get_post_field('post_excerpt', $post_id) ?: get_post_field('post_content', $post_id)), 130) }}</p>
+      <p>{{ post_password_required($post_id) ? '' : beryon_excerpt_text(beryon_plain_excerpt((string) get_post_field('post_excerpt', $post_id), 130) ?: wp_strip_all_tags((string) get_post_field('post_content', $post_id)), 130) }}</p>
     </div>
     <span class="ribbon-deco" aria-hidden="true"></span>
   </section>
