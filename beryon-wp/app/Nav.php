@@ -45,7 +45,7 @@ final class Nav
             case 'primary':
                 $products = [];
 
-                foreach (Products::categories() as $category) {
+                foreach (Products::main_categories() as $category) {
                     $products[] = ['title' => (string) $category['name'], 'url' => (string) $category['link'], 'children' => []];
                 }
 
@@ -87,7 +87,7 @@ final class Nav
             case 'footer_cats':
                 $items = [];
 
-                foreach (Products::categories() as $category) {
+                foreach (Products::main_categories() as $category) {
                     $items[] = ['title' => (string) $category['name'], 'url' => (string) $category['link']];
                 }
 

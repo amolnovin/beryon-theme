@@ -448,6 +448,7 @@ final class SettingsSchema
             ]],
             ['group' => 'products', 'name' => 'catalog_mode', 'label' => \__('حالت کاتالوگ/استعلام (بدون قیمت و سبد خرید)', BERYON_TD), 'type' => 'checkbox'],
             ['group' => 'products', 'name' => 'default_image', 'label' => \__('تصویر پیش‌فرض محصول', BERYON_TD), 'type' => 'text', 'dir' => 'ltr'],
+            ['group' => 'products', 'name' => 'main_parent', 'label' => \__('دسته مادرِ «دسته‌های اصلی»', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'help' => \__('خالی = خودکار. دسته‌های اصلیِ زبان جاری در صفحه اصلی، زیرمنوی محصولات و پابرگ نمایش داده می‌شوند. اگر انتخاب خودکار درست نبود، شناسه یا نامک دسته‌ای را بنویسید که زیردسته‌هایش دسته‌های اصلی‌اند (مثلاً products)؛ در زبان‌های دیگر ترجمه همان دسته به‌کار می‌رود.', BERYON_TD)],
             ['group' => 'products', 'name' => 'per_page', 'label' => \__('تعداد محصول در هر صفحه آرشیو', BERYON_TD), 'type' => 'number', 'min' => 4, 'max' => 96],
             ['group' => 'products', 'name' => 'grid_limit', 'label' => \__('حداکثر محصول در گرید بدون صفحه‌بندی', BERYON_TD), 'type' => 'number', 'min' => 4, 'max' => 200],
             ['group' => 'products', 'name' => 'paginate', 'label' => \__('صفحه‌بندی آرشیو محصولات', BERYON_TD), 'type' => 'checkbox'],

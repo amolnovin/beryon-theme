@@ -5,7 +5,7 @@
   head (meta + SEO + font + preload) → skip-link → topbar/header → mobile-menu
   → <main id="main"> محتوای صفحه → footer → to-top → lightbox → اسکریپت‌ها
 --}}<!DOCTYPE html>
-<html lang="{{ get_locale() === 'fa_IR' ? 'fa' : 'fa' }}" dir="rtl">
+<html lang="{{ \App\Lang::html_lang() }}" dir="{{ \App\Lang::is_rtl() ? 'rtl' : 'ltr' }}">
 <head>
 @include('partials.head')
 </head>

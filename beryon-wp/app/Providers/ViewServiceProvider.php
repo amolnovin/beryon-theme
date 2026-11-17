@@ -46,7 +46,7 @@ final class ViewServiceProvider extends \Roots\Acorn\ServiceProvider
         $data['nav']       = Nav::items('primary');
         $data['nav_footer_quick'] = Nav::items('footer_quick');
         $data['nav_footer_cats']  = Nav::items('footer_cats');
-        $data['categories'] = Products::categories();
+        $data['categories'] = Products::main_categories();
         $data['total_count'] = Products::total_count();
         $data['is_rtl']    = \is_rtl();
         $data['site_name'] = (string) \get_bloginfo('name');

@@ -113,10 +113,18 @@ final class Seeder
 
         foreach (Products::catalog()['categories'] as $slug => $cat) {
             $order++;
-            $existing = \term_exists((string) $slug, $taxonomy);
+            $term_id = Products::seed_term_id((string) $slug);
 
-            if (is_array($existing) && isset($existing['term_id'])) {
-                $term_id = (int) $existing['term_id'];
+            if ($term_id > 0) {
+                $term = \get_term($term_id, $taxonomy);
+
+                // دسته واقعیِ سایت که همین گروه است (نامک دیگری دارد): دسته تکراری ساخته
+                // نمی‌شود و نام، توضیح و متاهای خودش دست نمی‌خورد؛ محصولات نمونه به همان می‌روند.
+                if ($term instanceof \WP_Term && $term->slug !== (string) $slug) {
+                    $count++;
+
+                    continue;
+                }
             } else {
                 $inserted = \wp_insert_term((string) $cat['name'], $taxonomy, [
                     'slug'        => (string) $slug,
@@ -292,8 +300,11 @@ final class Seeder
     {
         $category = (string) ($data['category'] ?? '');
 
-        if ($category !== '' && \term_exists($category, Products::TAX)) {
-            \wp_set_object_terms($post_id, [$category], Products::TAX, false);
+        // شناسه دسته (نه نامک): روی سایتی که دسته‌های خودش را دارد، دسته هم‌گروهِ موجود است.
+        $term_id = $category !== '' ? Products::seed_term_id($category) : 0;
+
+        if ($term_id > 0) {
+            \wp_set_object_terms($post_id, [$term_id], Products::TAX, false);
         }
 
         $tags = (array) ($data['tags'] ?? []);

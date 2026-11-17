@@ -16,17 +16,11 @@
   /** @var \WP_Term|null $beryon_term */
   $beryon_term = isset($term) && $term instanceof \WP_Term ? $term : get_queried_object();
   $beryon_slug = $beryon_term instanceof \WP_Term ? (string) $beryon_term->slug : '';
-  $beryon_cat  = null;
-
-  foreach ((array) $categories as $category) {
-      if ((string) $category['slug'] === $beryon_slug) {
-          $beryon_cat = $category;
-          break;
-      }
-  }
-
-  $beryon_cat  = is_array($beryon_cat) ? $beryon_cat : [];
-  $reference   = \App\Products::catalog()['categories'][$beryon_slug] ?? [];
+  // داده دسته جاری (هر دسته‌ای، نه فقط دسته‌های اصلی که در $categories هستند). متن‌های
+  // کاتالوگ قالب از روی «گروه» دسته می‌آید (نامک دسته واقعی سایت با کاتالوگ یکی نیست)
+  // و فقط برای دسته زبان پیش‌فرض.
+  $beryon_cat  = $beryon_term instanceof \WP_Term ? \App\Products::category($beryon_term) : [];
+  $reference   = (array) ($beryon_cat['reference'] ?? []);
   $products    = \App\Products::query(['category' => $beryon_slug, 'limit' => (int) beryon_opt('products.grid_limit', 60)]);
   $others      = array_values(array_filter((array) $categories, static fn ($c) => (string) $c['slug'] !== $beryon_slug));
 
