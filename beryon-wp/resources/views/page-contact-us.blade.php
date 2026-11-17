@@ -45,12 +45,27 @@
           </div>
 @endif
 @endforeach
+@php
+  // کارت نقشه: زمینه از گوگل‌مپ یا نشان (تنظیم contact.map_provider)؛ اگر نشانیِ
+  // معتبری برای نقشه نباشد همان کارت ساده قالب HTML نمایش داده می‌شود.
+  $contact_map = beryon_contact_map();
+@endphp
+@if ($contact_map['provider'] !== 'none')
+          <div class="map-card map-card--live map-card--{{ $contact_map['provider'] }}" style="height:{{ (int) $contact_map['height'] }}px">
+            <iframe class="map-frame" src="{{ esc_url($contact_map['src']) }}" title="{{ beryon_opt('contact.map_title') }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+            <a class="map-cta" href="{{ esc_url(beryon_opt('general.map_url')) }}" target="_blank" rel="noopener">
+              <span class="pin">@php(beryon_svg('pin'))</span>
+              <span>{{ beryon_opt('contact.map_text') }}</span>
+            </a>
+          </div>
+@else
           <a class="map-card" href="{{ esc_url(beryon_opt('general.map_url')) }}" target="_blank" rel="noopener">
             <div>
               <span class="pin">@php(beryon_svg('pin'))</span>
               <p>{{ beryon_opt('contact.map_text') }}</p>
             </div>
           </a>
+@endif
         </div>
 
         <div class="form-card reveal d1">

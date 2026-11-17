@@ -1,5 +1,9 @@
 # با انتشار هر Release، بسته نصب قالب (beryon-wp.zip) از همان کامیتِ برچسب ساخته و
 # به Release پیوست می‌شود. zip در مخزن نگهداری نمی‌شود (*.zip در .gitignore).
+# از ۱.۰.۶ بسته به‌روزرسانی همان نسخه (beryon-patch-<نسخه>.zip — فایل‌هایی که نسبت به
+# نسخه پیشین عوض شده‌اند) هم ساخته و پیوست می‌شود؛ این همان فایلی است که در پنل قالب
+# «نصب بسته به‌روزرسانی از فایل zip» بارگذاری می‌شود. اگر ساخت بسته Patch شکست بخورد،
+# بسته نصب کامل باز هم پیوست می‌شود.
 # اجرای دستی برای یک Release موجود: Actions ← همین workflow ← Run workflow ← برچسب.
 name: Theme zip for release
 
@@ -26,6 +30,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name || inputs.tag }}
+          # make_patch.py برای git diff به کامیت نسخه پیشین نیاز دارد.
+          fetch-depth: 0
 
       - name: Build the package (tools/make_theme_zip.py — builds assets, runs its self-test)
         run: python3 tools/make_theme_zip.py
@@ -46,7 +52,30 @@ jobs:
           sha256sum beryon-wp.zip > beryon-wp.zip.sha256
           cat beryon-wp.zip.sha256 >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Attach to the release
+      - name: Attach the theme package to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" beryon-wp.zip beryon-wp.zip.sha256 --clobber
+
+      - name: Build the patch package for this version (tools/make_patch.py — files changed since the previous version)
+        id: patch
+        continue-on-error: true
+        run: |
+          VERSION="${TAG#v}"
+          python3 tools/make_patch.py "$VERSION"
+          test -s "beryon-patch-$VERSION.zip"
+          python3 - "$VERSION" <<'PY'
+          import json, sys, zipfile
+          z = zipfile.ZipFile('beryon-patch-%s.zip' % sys.argv[1])
+          m = json.loads(z.read('patch.json'))
+          print('patch %s → %s | files: %d | CRC: %s' % (m.get('from_version'), m.get('version'), len(m.get('files', [])), z.testzip() or 'ok'))
+          sys.exit(0 if m.get('version') == sys.argv[1] and not z.testzip() else 1)
+          PY
+          sha256sum "beryon-patch-$VERSION.zip" > "beryon-patch-$VERSION.zip.sha256"
+          cat "beryon-patch-$VERSION.zip.sha256" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach the patch package to the release
+        if: steps.patch.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "beryon-patch-${TAG#v}.zip" "beryon-patch-${TAG#v}.zip.sha256" --clobber

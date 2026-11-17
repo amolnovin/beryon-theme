@@ -84,7 +84,7 @@ final class SettingsSchema
             ],
             'updater' => [
                 'label'  => \__('به‌روزرسانی (Patch)', BERYON_TD),
-                'intro'  => \__('منبع به‌روزرسانی، کانال انتشار، محدودیت‌های امنیتی بسته پچ و تعداد پشتیبان‌های نگهداری‌شده. صفحه کامل نصب و بازگردانی: <a href="' . esc_url(\admin_url('admin.php?page=beryon-updates')) . '">به‌روزرسانی (Patch)</a>', BERYON_TD),
+                'intro'  => \__('به‌روزرسانی قالب با بارگذاری فایل zip بسته (Patch) از همین صفحه انجام می‌شود؛ قالب چیزی از سرور دیگری دریافت نمی‌کند. فیلدهای پایین فقط محدودیت‌های ایمنی بسته و تعداد پشتیبان‌ها را تعیین می‌کنند.', BERYON_TD),
                 'fields' => self::updater(),
             ],
         ];
@@ -332,10 +332,13 @@ final class SettingsSchema
             ['group' => 'general', 'name' => 'footer_text', 'label' => \__('متن معرفی در پانوشت', BERYON_TD), 'type' => 'html', 'rows' => 4],
             ['group' => 'general', 'name' => 'footer_quick_title', 'label' => \__('عنوان ستون دسترسی سریع', BERYON_TD), 'type' => 'text'],
             ['group' => 'general', 'name' => 'footer_cats_title', 'label' => \__('عنوان ستون دسته‌ها', BERYON_TD), 'type' => 'text'],
-            ['group' => 'general', 'name' => 'copyright', 'label' => \__('متن کپی‌رایت', BERYON_TD), 'type' => 'html', 'rows' => 2],
-            ['group' => 'general', 'name' => 'credit', 'label' => \__('اعتبار طراح', BERYON_TD), 'type' => 'html', 'rows' => 2],
             ['group' => 'general', 'name' => 'agency_cta_label', 'label' => \__('برچسب دکمه نمایندگی (هدر)', BERYON_TD), 'type' => 'text'],
             ['group' => 'general', 'name' => 'date_format', 'label' => \__('قالب تاریخ شمسی', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'help' => \__('Y/m/d یا d F Y', BERYON_TD)],
+
+            ['group' => 'general', 'type' => 'heading', 'label' => \__('نوار پایین پانوشت (footer-bottom)', BERYON_TD), 'help' => \__('سه متنِ نوار باریک پایینِ پانوشت. هر کدام را خالی کنید نمایش داده نمی‌شود؛ اگر هر سه خالی باشند خودِ نوار حذف می‌شود. توکن‌ها: <code>{gyear}</code> سال میلادی، <code>{year}</code> سال شمسی، <code>{brand}</code>، <code>{company}</code>.', BERYON_TD)],
+            ['group' => 'general', 'name' => 'copyright_prefix', 'label' => \__('پیشوند سمت راست (نشان © و سال)', BERYON_TD), 'type' => 'text', 'help' => \__('پیش‌فرض: «© {gyear} — ». پیش از «متن سمت راست» چاپ می‌شود.', BERYON_TD)],
+            ['group' => 'general', 'name' => 'copyright', 'label' => \__('متن سمت راست (کپی‌رایت)', BERYON_TD), 'type' => 'html', 'rows' => 2],
+            ['group' => 'general', 'name' => 'credit', 'label' => \__('متن سمت چپ (اعتبار)', BERYON_TD), 'type' => 'html', 'rows' => 2],
         ];
     }
 
@@ -491,12 +494,18 @@ final class SettingsSchema
             ['group' => 'catalog', 'name' => 'badge', 'label' => \__('برچسب بالای صفحه', BERYON_TD), 'type' => 'text'],
             ['group' => 'catalog', 'name' => 'heading', 'label' => \__('عنوان بخش معرفی', BERYON_TD), 'type' => 'text', 'wide' => true],
             ['group' => 'catalog', 'name' => 'text', 'label' => \__('متن بخش معرفی', BERYON_TD), 'type' => 'textarea', 'rows' => 4],
-            ['group' => 'catalog', 'name' => 'pdf_id', 'label' => \__('فایل PDF کاتالوگ (کتابخانه رسانه)', BERYON_TD), 'type' => 'media'],
-            ['group' => 'catalog', 'name' => 'pdf_url', 'label' => \__('یا آدرس مستقیم PDF', BERYON_TD), 'type' => 'url'],
-            ['group' => 'catalog', 'name' => 'flipbook_url', 'label' => \__('آدرس نسخه آنلاین (Flipbook)', BERYON_TD), 'type' => 'url'],
-            ['group' => 'catalog', 'name' => 'download_label', 'label' => \__('برچسب دانلود', BERYON_TD), 'type' => 'text'],
-            ['group' => 'catalog', 'name' => 'download_pending', 'label' => \__('برچسب «به‌زودی»', BERYON_TD), 'type' => 'text'],
-            ['group' => 'catalog', 'name' => 'online_label', 'label' => \__('برچسب مشاهده آنلاین', BERYON_TD), 'type' => 'text'],
+
+            ['group' => 'catalog', 'type' => 'heading', 'label' => \__('کاتالوگ: دکمه «نسخه PDF»', BERYON_TD), 'help' => \__('لینک فایل PDF کاتالوگ را بنویسید یا فایل را از کتابخانه رسانه انتخاب کنید. تا وقتی هیچ‌کدام پر نشده، دکمه با برچسب «به‌زودی» و بدون لینک نمایش داده می‌شود.', BERYON_TD)],
+            ['group' => 'catalog', 'name' => 'pdf_url', 'label' => \__('لینک فایل PDF کاتالوگ', BERYON_TD), 'type' => 'url', 'help' => \__('نشانی کامل فایل، مثال: https://beryon.com/wp-content/uploads/catalog.pdf', BERYON_TD)],
+            ['group' => 'catalog', 'name' => 'pdf_id', 'label' => \__('یا انتخاب فایل PDF از کتابخانه رسانه', BERYON_TD), 'type' => 'media', 'mime' => 'application/pdf', 'help' => \__('اگر «لینک فایل PDF» پر باشد همان به‌کار می‌رود.', BERYON_TD)],
+            ['group' => 'catalog', 'name' => 'download_label', 'label' => \__('برچسب دکمه (وقتی PDF هست)', BERYON_TD), 'type' => 'text'],
+            ['group' => 'catalog', 'name' => 'download_pending', 'label' => \__('برچسب دکمه (وقتی PDF نیست)', BERYON_TD), 'type' => 'text'],
+
+            ['group' => 'catalog', 'type' => 'heading', 'label' => \__('کاتالوگ: دکمه «مشاهده آنلاین کاتالوگ»', BERYON_TD), 'help' => \__('این دکمه کاتالوگ را در یک پنجره (مودال) روی همان صفحه باز می‌کند. کاتالوگ با شورت‌کد افزونه DearFlip نمایش داده می‌شود. اگر شورت‌کد خالی باشد یا افزونه‌اش فعال نباشد: «آدرس نسخه آنلاین» در زبانه تازه باز می‌شود؛ اگر آن هم نباشد فایل PDF در همان پنجره نمایش داده می‌شود و در نبود هر سه، دکمه به صفحه محصولات می‌رود.', BERYON_TD)],
+            ['group' => 'catalog', 'name' => 'flipbook_shortcode', 'label' => \__('شورت‌کد کاتالوگ آنلاین (DearFlip)', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'wide' => true, 'help' => \__('مثال: <code>[dflip id="12433"][/dflip]</code> — شناسه را از «DearFlip ← کتاب‌ها» بردارید.', BERYON_TD)],
+            ['group' => 'catalog', 'name' => 'flipbook_url', 'label' => \__('آدرس نسخه آنلاین (جایگزین شورت‌کد)', BERYON_TD), 'type' => 'url'],
+            ['group' => 'catalog', 'name' => 'online_label', 'label' => \__('برچسب دکمه مشاهده آنلاین', BERYON_TD), 'type' => 'text'],
+            ['group' => 'catalog', 'name' => 'modal_title', 'label' => \__('عنوان پنجره کاتالوگ آنلاین', BERYON_TD), 'type' => 'text'],
             ['group' => 'catalog', 'name' => 'cta_title', 'label' => \__('عنوان CTA', BERYON_TD), 'type' => 'text', 'wide' => true],
             ['group' => 'catalog', 'name' => 'cta_text', 'label' => \__('متن CTA', BERYON_TD), 'type' => 'textarea', 'rows' => 2],
             ['group' => 'catalog', 'name' => 'cta_btn', 'label' => \__('دکمه CTA', BERYON_TD), 'type' => 'text'],
@@ -558,10 +567,10 @@ final class SettingsSchema
             ['group' => 'org', 'name' => 'title', 'label' => \__('عنوان', BERYON_TD), 'type' => 'text', 'wide' => true],
             ['group' => 'org', 'name' => 'lead', 'label' => \__('متن ابتدایی', BERYON_TD), 'type' => 'textarea', 'rows' => 2],
             ['group' => 'org', 'name' => 'root', 'label' => \__('عنوان ریشه چارت', BERYON_TD), 'type' => 'text'],
-            ['group' => 'org', 'name' => 'root_name', 'label' => \__('نام ریشه', BERYON_TD), 'type' => 'text'],
-            ['group' => 'org', 'name' => 'units', 'label' => \__('واحدهای سازمانی', BERYON_TD), 'type' => 'repeater', 'max' => 12, 'row' => [
+            ['group' => 'org', 'name' => 'root_name', 'label' => \__('نام ریشه (اختیاری؛ زیر عنوان ریشه)', BERYON_TD), 'type' => 'text'],
+            ['group' => 'org', 'name' => 'units', 'label' => \__('واحدهای سازمانی', BERYON_TD), 'type' => 'repeater', 'max' => 12, 'help' => \__('هر ردیف یک خانه سطح نخست چارت است (به ترتیب از راست). زیرواحدها هر کدام در یک خط؛ برای خانه‌های سطح سوم پس از «|» نام‌ها را با «،» جدا کنید. مثال: <code>انبارها | انبار فنی، انبار مواد اولیه</code>', BERYON_TD), 'row' => [
                 ['name' => 'title', 'label' => \__('واحد', BERYON_TD), 'type' => 'text'],
-                ['name' => 'children', 'label' => \__('زیرواحدها (هر خط یک مورد؛ توضیح اختیاری پس از «|»)', BERYON_TD), 'type' => 'sublist'],
+                ['name' => 'children', 'label' => \__('زیرواحدها (هر خط یک مورد؛ زیرمجموعه‌ها پس از «|» و جدا با «،»)', BERYON_TD), 'type' => 'sublist'],
             ]],
             ['group' => 'org', 'name' => 'duties_tag', 'label' => \__('برچسب شرح وظایف', BERYON_TD), 'type' => 'text'],
             ['group' => 'org', 'name' => 'duties_title', 'label' => \__('عنوان شرح وظایف', BERYON_TD), 'type' => 'text'],
@@ -626,6 +635,20 @@ final class SettingsSchema
                 ['name' => 'text', 'label' => \__('متن', BERYON_TD), 'type' => 'textarea'],
                 ['name' => 'href', 'label' => \__('لینک (اختیاری)', BERYON_TD), 'type' => 'text', 'dir' => 'ltr'],
             ]],
+
+            ['group' => 'contact', 'type' => 'heading', 'label' => \__('نقشه کارت «موقعیت کارخانه» در برگه تماس', BERYON_TD), 'help' => \__('زمینه کارت نقشه را از گوگل‌مپ یا نشان انتخاب کنید. پیوند زیر نقشه همان «لینک نقشه» زبانه «عمومی» است.', BERYON_TD)],
+            ['group' => 'contact', 'name' => 'map_provider', 'label' => \__('سرویس نقشه', BERYON_TD), 'type' => 'select', 'options' => [
+                ['value' => 'google', 'label' => \__('گوگل‌مپ (Google Maps)', BERYON_TD)],
+                ['value' => 'neshan', 'label' => \__('نشان (Neshan)', BERYON_TD)],
+                ['value' => 'none', 'label' => \__('بدون نقشه (کارت ساده)', BERYON_TD)],
+            ]],
+            ['group' => 'contact', 'name' => 'map_lat', 'label' => \__('عرض جغرافیایی (Latitude)', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'help' => \__('برای نقشه گوگل وقتی «کد جاسازی» خالی است. مثال: 36.3962353', BERYON_TD)],
+            ['group' => 'contact', 'name' => 'map_lng', 'label' => \__('طول جغرافیایی (Longitude)', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'help' => \__('مثال: 52.3201086', BERYON_TD)],
+            ['group' => 'contact', 'name' => 'map_zoom', 'label' => \__('بزرگ‌نمایی نقشه گوگل', BERYON_TD), 'type' => 'number', 'min' => 3, 'max' => 20],
+            ['group' => 'contact', 'name' => 'map_google_embed', 'label' => \__('کد جاسازی گوگل‌مپ (اختیاری)', BERYON_TD), 'type' => 'embed', 'hosts' => 'google', 'help' => \__('در Google Maps: Share ← Embed a map ← کد <code>&lt;iframe&gt;</code> را این‌جا بچسبانید (فقط نشانی آن ذخیره می‌شود). خالی = ساخت خودکار از مختصات بالا.', BERYON_TD)],
+            ['group' => 'contact', 'name' => 'map_neshan_embed', 'label' => \__('کد جاسازی نشان', BERYON_TD), 'type' => 'embed', 'hosts' => 'neshan', 'help' => \__('در neshan.org مکان را پیدا کنید ← «اشتراک‌گذاری» ← «کد برای نمایش در سایت» ← کد <code>&lt;iframe&gt;</code> را این‌جا بچسبانید. نقشه نشان فقط با همین کد نمایش داده می‌شود؛ تا وقتی خالی است کارت ساده می‌ماند.', BERYON_TD)],
+            ['group' => 'contact', 'name' => 'map_height', 'label' => \__('بلندی کارت نقشه (پیکسل)', BERYON_TD), 'type' => 'number', 'min' => 200, 'max' => 640],
+            ['group' => 'contact', 'name' => 'map_title', 'label' => \__('عنوان نقشه (برای صفحه‌خوان)', BERYON_TD), 'type' => 'text', 'wide' => true],
             ['group' => 'contact', 'name' => 'map_text', 'label' => \__('متن لینک نقشه', BERYON_TD), 'type' => 'text'],
             ['group' => 'contact', 'name' => 'form_title', 'label' => \__('عنوان فرم تماس', BERYON_TD), 'type' => 'text', 'wide' => true],
             ['group' => 'contact', 'name' => 'departments', 'label' => \__('واحد‌های انتخابی', BERYON_TD), 'type' => 'lines', 'rows' => 3],
@@ -639,6 +662,11 @@ final class SettingsSchema
                 ['name' => 'text', 'label' => \__('متن', BERYON_TD), 'type' => 'textarea'],
             ]],
             ['group' => 'feedback', 'name' => 'form_title', 'label' => \__('عنوان فرم', BERYON_TD), 'type' => 'text', 'wide' => true],
+            ['group' => 'feedback', 'name' => 'form_source', 'label' => \__('فرم این برگه', BERYON_TD), 'type' => 'select', 'options' => [
+                ['value' => 'auto', 'label' => \__('خودکار: فرم افزونه اگر در دسترس باشد، وگرنه فرم قالب', BERYON_TD)],
+                ['value' => 'theme', 'label' => \__('همیشه فرم خودِ قالب', BERYON_TD)],
+            ], 'help' => \__('«فرم افزونه» یعنی شورت‌کدِ فیلد پایین، یا شورت‌کدی که در متن همین برگه نوشته شده است (به شرط فعال بودن افزونه‌اش).', BERYON_TD)],
+            ['group' => 'feedback', 'name' => 'form_shortcode', 'label' => \__('شورت‌کد فرم نظرات و شکایات (افزونه)', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'wide' => true, 'help' => \__('شورت‌کد فرم نظرات و شکایاتِ افزونه را این‌جا بنویسید. افزونه «نمایندگان فروش بریان» نسخه ۱.۷.۲ چنین شورت‌کدی ندارد؛ تا وقتی این فیلد خالی است فرم خودِ قالب نمایش داده می‌شود.', BERYON_TD)],
             ['group' => 'feedback', 'name' => 'subjects', 'label' => \__('موضوعات', BERYON_TD), 'type' => 'lines', 'rows' => 3],
             ['group' => 'feedback', 'name' => 'types', 'label' => \__('انواع پیام', BERYON_TD), 'type' => 'repeater', 'max' => 8, 'row' => [
                 ['name' => 'value', 'label' => \__('مقدار', BERYON_TD), 'type' => 'text', 'dir' => 'ltr'],
@@ -657,6 +685,12 @@ final class SettingsSchema
             ['group' => 'agency', 'name' => 'title', 'label' => \__('عنوان', BERYON_TD), 'type' => 'text', 'wide' => true],
             ['group' => 'agency', 'name' => 'lead', 'label' => \__('متن ابتدایی', BERYON_TD), 'type' => 'textarea', 'rows' => 2],
             ['group' => 'agency', 'name' => 'form_title', 'label' => \__('عنوان فرم', BERYON_TD), 'type' => 'text'],
+            ['group' => 'agency', 'name' => 'form_source', 'label' => \__('فرم این برگه', BERYON_TD), 'type' => 'select', 'options' => [
+                ['value' => 'auto', 'label' => \__('خودکار: فرم افزونه نمایندگان اگر فعال باشد، وگرنه فرم قالب', BERYON_TD)],
+                ['value' => 'theme', 'label' => \__('همیشه فرم خودِ قالب', BERYON_TD)],
+            ], 'help' => \__('با فعال بودن افزونه «سیستم نمایندگان فروش بریان»، فرم درخواست نمایندگیِ همان افزونه نمایش داده می‌شود و درخواست‌ها در پنل افزونه ثبت می‌شوند.', BERYON_TD)],
+            ['group' => 'agency', 'name' => 'form_shortcode', 'label' => \__('شورت‌کد فرم (اختیاری)', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'wide' => true, 'help' => \__('خالی = <code>[beryon_agent_application]</code>. برای عنوان دلخواه: <code>[beryon_agent_application title="…" subtitle="…"]</code>', BERYON_TD)],
+            ['group' => 'agency', 'name' => 'page', 'label' => \__('برگه «درخواست نمایندگی» (اختیاری)', BERYON_TD), 'type' => 'text', 'dir' => 'ltr', 'help' => \__('شناسه یا نامک برگه‌ای که دکمه‌های «درخواست نمایندگی» به آن می‌روند. خالی = پیدا کردن خودکار (برگه با قالب «اعطای نمایندگی»، نامک agency، یا برگه‌ای که شورت‌کد فرم افزونه را دارد).', BERYON_TD)],
             ['group' => 'agency', 'name' => 'form_note', 'label' => \__('یادداشت زیر عنوان فرم', BERYON_TD), 'type' => 'textarea', 'rows' => 2],
             ['group' => 'agency', 'name' => 'steps', 'label' => \__('مراحل همکاری', BERYON_TD), 'type' => 'repeater', 'max' => 6, 'row' => [
                 ['name' => 'icon', 'label' => \__('آیکون', BERYON_TD), 'type' => 'text', 'dir' => 'ltr'],
@@ -770,7 +804,7 @@ final class SettingsSchema
             ['group' => 'performance', 'name' => 'remove_wp_block_css', 'label' => \__('حذف CSS بلوک‌ها و گوتنبرگ', BERYON_TD), 'type' => 'checkbox'],
             ['group' => 'performance', 'name' => 'remove_woo_css', 'label' => \__('حذف CSS ووکامرس (استایل اختصاصی قالب)', BERYON_TD), 'type' => 'checkbox'],
             ['group' => 'performance', 'name' => 'disable_xmlrpc', 'label' => \__('غیرفعال‌سازی XML-RPC', BERYON_TD), 'type' => 'checkbox'],
-            ['group' => 'performance', 'name' => 'disable_rest_for_guests', 'label' => \__('محدودسازی REST برای مهمان‌ها', BERYON_TD), 'type' => 'checkbox', 'help' => \__('مسیر فرم‌های قالب (beryon/v1) همیشه باز می‌ماند.', BERYON_TD)],
+            ['group' => 'performance', 'name' => 'disable_rest_for_guests', 'label' => \__('محدودسازی REST برای مهمان‌ها', BERYON_TD), 'type' => 'checkbox', 'help' => \__('مسیر فرم‌های قالب (beryon/v1) و افزونه نمایندگان (beryon-agents/v1) همیشه باز می‌ماند.', BERYON_TD)],
 
             ['group' => 'performance', 'type' => 'heading', 'label' => \__('حافظه نهان', BERYON_TD)],
             ['group' => 'performance', 'name' => 'query_cache', 'label' => \__('حافظه نهان کوئری محصولات', BERYON_TD), 'type' => 'checkbox'],
@@ -812,19 +846,6 @@ final class SettingsSchema
     private static function updater(): array
     {
         return [
-            ['group' => 'updater', 'name' => 'allow_remote', 'label' => \__('اجازه بررسی/دانلود از سرور راه دور', BERYON_TD), 'type' => 'checkbox'],
-            ['group' => 'updater', 'name' => 'feed_url', 'label' => \__('آدرس فید به‌روزرسانی (JSON)', BERYON_TD), 'type' => 'url', 'help' => \__('مثال: https://example.com/patches/beryon/feed.json', BERYON_TD)],
-            ['group' => 'updater', 'name' => 'auto_check', 'label' => \__('بررسی خودکار زمان‌بندی‌شده', BERYON_TD), 'type' => 'checkbox'],
-            ['group' => 'updater', 'name' => 'check_interval', 'label' => \__('بازه بررسی', BERYON_TD), 'type' => 'select', 'options' => [
-                ['value' => 'hourly', 'label' => \__('هر ساعت', BERYON_TD)],
-                ['value' => 'twicedaily', 'label' => \__('دو بار در روز', BERYON_TD)],
-                ['value' => 'daily', 'label' => \__('روزانه', BERYON_TD)],
-                ['value' => 'weekly', 'label' => \__('هفتگی', BERYON_TD)],
-            ]],
-            ['group' => 'updater', 'name' => 'channel', 'label' => \__('کانال انتشار', BERYON_TD), 'type' => 'select', 'options' => [
-                ['value' => 'stable', 'label' => \__('پایدار', BERYON_TD)],
-                ['value' => 'beta', 'label' => \__('آزمایشی', BERYON_TD)],
-            ]],
             ['group' => 'updater', 'name' => 'backups_keep', 'label' => \__('تعداد پشتیبان نگهداری‌شده', BERYON_TD), 'type' => 'number', 'min' => 0, 'max' => 20],
             ['group' => 'updater', 'name' => 'max_patch_size', 'label' => \__('حداکثر حجم بسته پچ (بایت)', BERYON_TD), 'type' => 'number', 'min' => 1048576, 'max' => 268435456],
             ['group' => 'updater', 'name' => 'max_file_size', 'label' => \__('حداکثر حجم هر فایل (بایت)', BERYON_TD), 'type' => 'number', 'min' => 10240, 'max' => 104857600],

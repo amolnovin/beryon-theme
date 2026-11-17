@@ -124,8 +124,12 @@ final class Security
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",
-            "frame-src https://www.google.com https://maps.google.com",
+            // 'self': پنجره کاتالوگ آنلاین (PDF همان سایت) و جاسازی‌های خودِ وردپرس؛
+            // گوگل‌مپ و نشان: نقشه برگه تماس (تنظیم contact.map_provider).
+            "frame-src 'self' https://www.google.com https://maps.google.com https://neshan.org https://www.neshan.org",
             "connect-src 'self'",
+            // نمایشگرهای PDF/فلیپ‌بوک (مثل DearFlip) کارگر pdf.js را از blob: می‌سازند.
+            "worker-src 'self' blob:",
         ];
 
         // فقط روی HTTPS: در سایت HTTP-only این دستور همه دارایی‌ها را به HTTPS
@@ -146,6 +150,47 @@ final class Security
          * @param array $directives
          */
         return implode('; ', array_filter((array) \apply_filters('beryon/security/csp', $directives)));
+    }
+
+    /**
+     * آیا درخواست REST جاری به مسیری است که برای مهمان باید باز بماند؟
+     *
+     * @return bool
+     */
+    public static function is_public_rest_route(): bool
+    {
+        $route = '';
+
+        if (isset($GLOBALS['wp']) && is_object($GLOBALS['wp']) && isset($GLOBALS['wp']->query_vars['rest_route'])) {
+            $route = (string) $GLOBALS['wp']->query_vars['rest_route'];
+        } elseif (isset($_GET['rest_route'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $route = (string) \sanitize_text_field(\wp_unslash($_GET['rest_route'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        }
+
+        $route = '/' . ltrim($route, '/');
+
+        /**
+         * فیلتر پیشوند مسیرهای REST که با روشن بودن «محدودسازی REST برای مهمان‌ها» هم باز می‌مانند.
+         *
+         * @param array<int,string> $prefixes پیشوندها (با اسلش آغاز و پایان)
+         */
+        $prefixes = (array) \apply_filters(
+            'beryon/security/public_rest_routes',
+            [
+                '/' . Forms::REST_NS . '/', // فرم‌های قالب
+                '/beryon-agents/v1/',       // افزونه «سیستم نمایندگان فروش بریان» (دریافت کلید ippanel-core)
+            ]
+        );
+
+        foreach ($prefixes as $prefix) {
+            $prefix = (string) $prefix;
+
+            if ($prefix !== '' && strpos($route . '/', $prefix) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -202,7 +247,14 @@ final class Security
                         return $result;
                     }
 
-                    return \is_user_logged_in() ? $result : new \WP_Error(
+                    // مسیرهای عمومیِ خودِ قالب (ارسال فرم‌های تماس، نظرات، نمایندگی و خبرنامه)
+                    // و افزونه نمایندگان باید برای مهمان باز بمانند؛ تا ۱.۰.۵ این گزینه
+                    // فرم‌های خودِ قالب را هم برای بازدیدکننده از کار می‌انداخت.
+                    if (\is_user_logged_in() || self::is_public_rest_route()) {
+                        return $result;
+                    }
+
+                    return new \WP_Error(
                         'rest_disabled',
                         \__('دسترسی به REST برای کاربران مهمان غیرفعال است.', BERYON_TD),
                         ['status' => 401]
@@ -358,7 +410,7 @@ final class Security
         $map   = [];
 
         foreach ($files as $relative) {
-            $path = BERYON_PATH . '/' . ltrim($relative, '/');
+            $path = BERYON_THEME_PATH . '/' . ltrim($relative, '/');
 
             if (is_readable($path)) {
                 $map[$relative] = hash_file('sha256', $path);
@@ -368,7 +420,7 @@ final class Security
         \update_option(
             self::FINGERPRINT,
             [
-                'version' => BERYON_VERSION,
+                'version' => BERYON_THEME_VERSION,
                 'created' => time(),
                 'files'   => $map,
             ],
@@ -394,7 +446,7 @@ final class Security
         $missing  = [];
 
         foreach ($files as $relative => $hash) {
-            $path = BERYON_PATH . '/' . ltrim((string) $relative, '/');
+            $path = BERYON_THEME_PATH . '/' . ltrim((string) $relative, '/');
 
             if (! is_readable($path)) {
                 $missing[] = (string) $relative;

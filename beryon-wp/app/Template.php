@@ -56,6 +56,8 @@ final class Template
              */
             $view = (string) \apply_filters('beryon/template', $view);
 
+            self::enqueue_early();
+
             $html = Acorn::page($view, self::data($view));
 
             if (trim($html) === '') {
@@ -70,6 +72,28 @@ final class Template
 
             return self::emergency($error, $view);
         }
+    }
+
+    /**
+     * اجرای هوک wp_enqueue_scripts پیش از رندر نما.
+     *
+     * بدنه صفحه (و شورت‌کدهای داخل آن) پیش از سربرگ سند رندر می‌شود، یعنی پیش از
+     * wp_head() که این هوک را اجرا می‌کند. افزونه‌هایی که اسکریپت‌شان را در همین هوک
+     * «ثبت» و هنگام رندر شورت‌کد wp_localize_script می‌کنند (مثل فرم و پنل‌های افزونه
+     * نمایندگان بریان) در آن لحظه هنوز چیزی ثبت نکرده بودند و داده اسکریپت‌شان
+     * (نشانی AJAX و nonce) بی‌صدا دور ریخته می‌شد. هوک یک بار همین‌جا اجرا و اجرای
+     * دوباره‌اش در wp_head برداشته می‌شود.
+     *
+     * @return void
+     */
+    private static function enqueue_early(): void
+    {
+        if (\is_admin() || \did_action('wp_enqueue_scripts') > 0 || \doing_action('wp_enqueue_scripts')) {
+            return;
+        }
+
+        \do_action('wp_enqueue_scripts'); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- هوک هسته وردپرس
+        \remove_action('wp_head', 'wp_enqueue_scripts', 1);
     }
 
     /**
@@ -295,6 +319,19 @@ final class Template
 
                 if ($slug !== '') {
                     $candidates[] = 'page-' . $slug;
+
+                    // مسیرهای شناخته‌شده: برگه‌ای که نامکش با نام نما یکی نیست (مثل
+                    // ‎/organizational-chart/‎ برای page-org-chart) هم نمای خودش را می‌گیرد.
+                    // مقایسه با مسیر کامل برگه است تا برگه‌های دیگرِ هم‌نامک دست نخورند.
+                    $path = rawurldecode(trim((string) \get_page_uri((int) \get_the_ID()), '/'));
+
+                    foreach (\beryon_page_slugs() as $view => $paths) {
+                        if (in_array($path, (array) $paths, true)) {
+                            $candidates[] = 'page-' . $view;
+
+                            break;
+                        }
+                    }
                 }
 
                 $candidates[] = 'page';

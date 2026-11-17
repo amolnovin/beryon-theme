@@ -9,7 +9,8 @@
  *   ۲) ردیف‌ساز (Repeater) برای فهرست‌های تنظیم‌پذیر + سقف data-max
  *   ۳) انتخابگر رسانه (wp.media) برای لوگو/تصاویر با پیش‌نمایش فوری
  *   ۴) همگام‌سازی input[type=color] با فیلد متنی (data-sync)
- *   ۵) درخواست‌های AJAX: بررسی به‌روزرسانی، یکپارچگی فایل‌ها، بازگردانی
+ *   ۵) درخواست‌های AJAX: یکپارچگی فایل‌ها، بازسازی اثر انگشت، بازگردانی
+ *      (به‌روزرسانی قالب فقط با بارگذاری فایل zip بسته انجام می‌شود)
  *   ۶) نمایش وضعیت دکمه‌ها (data-loading) و تأیید پیش از عملیات مخرب
  *
  * پیکربندی از window.beryonAdmin می‌آید (app/Assets.php::admin_assets).
@@ -146,14 +147,24 @@
       var select = wrap.querySelector('[data-media-select]');
       var clear = wrap.querySelector('[data-media-clear]');
       var frame = null;
+      /* نوع فایل قابل انتخاب: image (پیش‌فرض) یا مثلاً application/pdf برای کاتالوگ */
+      var mediaType = wrap.getAttribute('data-media-type') || 'image';
+      var isImage = mediaType === 'image';
 
       /* مقدار فیلد پنهان «شناسه پیوست» است؛ پیش‌نمایش با URL پر می‌شود. */
       var paint = function (url) {
         var value = field ? field.value : '';
         if (preview) {
-          preview.innerHTML = url
-            ? '<img src="' + String(url).replace(/"/g, '&quot;') + '" alt="" loading="lazy" decoding="async">'
-            : '<span>' + (strings.noImage || 'بدون تصویر') + '</span>';
+          var safe = String(url || '').replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+          });
+          if (!url) {
+            preview.innerHTML = '<span>' + (isImage ? (strings.noImage || 'بدون تصویر') : (strings.noFile || 'فایلی انتخاب نشده')) + '</span>';
+          } else if (isImage) {
+            preview.innerHTML = '<img src="' + safe + '" alt="" loading="lazy" decoding="async">';
+          } else {
+            preview.innerHTML = '<a href="' + safe + '" target="_blank" rel="noopener" dir="ltr">' + safe.split('/').pop() + '</a>';
+          }
         }
         if (clear) {
           clear.disabled = !value;
@@ -177,9 +188,9 @@
           }
 
           frame = window.wp.media({
-            title: strings.mediaTitle || 'انتخاب تصویر',
+            title: isImage ? (strings.mediaTitle || 'انتخاب تصویر') : (strings.fileTitle || 'انتخاب فایل'),
             multiple: false,
-            library: { type: 'image' }
+            library: { type: mediaType }
           });
 
           frame.on('select', function () {
@@ -187,7 +198,7 @@
             if (!attachment || !field) {
               return;
             }
-            var url = (attachment.sizes && attachment.sizes.large && attachment.sizes.large.url) || attachment.url;
+            var url = isImage ? ((attachment.sizes && attachment.sizes.large && attachment.sizes.large.url) || attachment.url) : attachment.url;
             field.value = input ? String(attachment.id) : url;
             field.dispatchEvent(new Event('change', { bubbles: true }));
             paint(url);
@@ -373,19 +384,44 @@
       });
     });
 
-    /* بررسی اندازه فایل پچ پیش از آپلود */
+    /* بسته به‌روزرسانی: پیش از بارگذاری، وجود فایل، پسوند zip و اندازه بررسی می‌شود
+       (همین بررسی‌ها در سرور هم تکرار می‌شود). */
     var patchInput = document.getElementById('beryon-patch-file');
-    if (patchInput && cfg.maxPatchSize) {
+
+    function patchProblem() {
+      var file = patchInput && patchInput.files && patchInput.files[0];
+      if (!file) {
+        return strings.emptyPatch || 'ابتدا فایل zip بسته به‌روزرسانی را انتخاب کنید.';
+      }
+      if (!/\.zip$/i.test(file.name)) {
+        return strings.notZip || 'فایل انتخاب‌شده zip نیست.';
+      }
+      if (cfg.maxPatchSize && file.size > cfg.maxPatchSize) {
+        return (strings.tooLarge || 'حجم فایل بیش از حد مجاز است.') + ' (' + Math.round(file.size / 1048576) + 'MB)';
+      }
+      return '';
+    }
+
+    if (patchInput) {
       patchInput.addEventListener('change', function () {
-        var file = patchInput.files && patchInput.files[0];
-        if (file && file.size > cfg.maxPatchSize) {
-          window.alert(
-            (strings.tooLarge || 'حجم فایل پچ بیش از حد مجاز است.') +
-            ' (' + Math.round(file.size / 1048576) + 'MB)'
-          );
+        var problem = patchInput.files && patchInput.files[0] ? patchProblem() : '';
+        if (problem) {
+          window.alert(problem);
           patchInput.value = '';
         }
       });
+
+      var patchForm = patchInput.closest('form');
+      if (patchForm) {
+        patchForm.addEventListener('submit', function (event) {
+          var problem = patchProblem();
+          if (problem) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            window.alert(problem);
+          }
+        }, true);
+      }
     }
   }
 

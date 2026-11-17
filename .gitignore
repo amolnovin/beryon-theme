@@ -14,3 +14,6 @@ qa-*.png
 # کش کامپایل Blade و لاگ‌ها (placeholderها در مخزن هست)
 beryon-wp/storage/framework/views/*.php
 beryon-wp/storage/logs/*.log
+
+# فایل‌هایی که از سرویس‌های متصل (مثل گوگل‌درایو) برای بررسی دانلود می‌شوند
+google_drive/

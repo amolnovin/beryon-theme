@@ -59,7 +59,7 @@ final class ThemeServiceProvider extends \Roots\Acorn\ServiceProvider
     public function register(): void
     {
         // مسیر نماها برای Blade
-        $this->app->bind('beryon.views', static fn (): string => BERYON_PATH . '/resources/views');
+        $this->app->bind('beryon.views', static fn (): string => BERYON_THEME_PATH . '/resources/views');
     }
 
     /**
@@ -77,7 +77,7 @@ final class ThemeServiceProvider extends \Roots\Acorn\ServiceProvider
 
         Acorn::share([
             'beryon' => [
-                'version' => defined('BERYON_VERSION') ? BERYON_VERSION : '1.0.0',
+                'version' => defined('BERYON_THEME_VERSION') ? BERYON_THEME_VERSION : '1.0.0',
                 'name'    => Settings::opt('general.brand_name', 'بریون'),
             ],
         ]);

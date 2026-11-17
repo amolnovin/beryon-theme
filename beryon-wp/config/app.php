@@ -24,11 +24,11 @@ return [
     | برای سازگاری با میزبانی‌های اشتراکی، همه مسیرها نسبی به پوشه قالب‌اند.
     */
     'paths' => [
-        'root'    => BERYON_PATH,
-        'base'    => BERYON_PATH,
+        'root'    => BERYON_THEME_PATH,
+        'base'    => BERYON_THEME_PATH,
         'storage' => defined('WP_CONTENT_DIR') && is_writable(WP_CONTENT_DIR)
             ? WP_CONTENT_DIR . '/uploads/beryon-storage'
-            : BERYON_PATH . '/storage',
+            : BERYON_THEME_PATH . '/storage',
     ],
 
     /*

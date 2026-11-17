@@ -37,6 +37,16 @@
 @endforeach
         </div>
 
+@php
+  // فرم افزونه: شورت‌کد تنظیم feedback.form_shortcode یا شورت‌کدی که در متن همین برگه
+  // نوشته شده (اگر افزونه‌اش فعال باشد)؛ وگرنه فرم خودِ قالب.
+  $feedback_plugin_form = \App\Agents::form_html('feedback');
+@endphp
+@if ($feedback_plugin_form !== '')
+        <div class="plugin-form plugin-form--feedback reveal d1">
+          {!! $feedback_plugin_form !!}
+        </div>
+@else
         <div class="form-card reveal d1">
           <form data-form="feedback" method="post" action="{{ esc_url(beryon_form_url()) }}" novalidate>
             <h2 style="font-size:1.2rem;margin-bottom:20px">{{ beryon_opt('feedback.form_title') }}</h2>
@@ -71,6 +81,7 @@
             <span class="track"></span>
           </div>
         </div>
+@endif
       </div>
 
       <div class="sec-head reveal" style="margin-top:80px">

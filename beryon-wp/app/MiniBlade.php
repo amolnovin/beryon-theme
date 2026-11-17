@@ -132,8 +132,8 @@ final class MiniBlade
     {
         $paths = self::$paths;
 
-        if (defined('BERYON_PATH')) {
-            $default = rtrim((string) BERYON_PATH, '/') . '/resources/views';
+        if (defined('BERYON_THEME_PATH')) {
+            $default = rtrim((string) BERYON_THEME_PATH, '/') . '/resources/views';
 
             if (! in_array($default, $paths, true)) {
                 $paths[] = $default;
@@ -231,8 +231,8 @@ final class MiniBlade
             $candidates[] = WP_CONTENT_DIR . '/cache/beryon-views';
         }
 
-        if (defined('BERYON_PATH')) {
-            $candidates[] = BERYON_PATH . '/storage/framework/views';
+        if (defined('BERYON_THEME_PATH')) {
+            $candidates[] = BERYON_THEME_PATH . '/storage/framework/views';
         }
 
         $candidates[] = sys_get_temp_dir() . '/beryon-views';
@@ -324,8 +324,8 @@ final class MiniBlade
         $dirs    = [self::cacheDir()];
         $removed = 0;
 
-        if (defined('BERYON_PATH')) {
-            $dirs[] = BERYON_PATH . '/storage/framework/views';
+        if (defined('BERYON_THEME_PATH')) {
+            $dirs[] = BERYON_THEME_PATH . '/storage/framework/views';
         }
 
         foreach ($dirs as $dir) {

@@ -3,6 +3,8 @@
   ------------------------------------------------------------------
   مارک‌آپ دقیقاً مطابق قالب HTML نهایی؛ متن‌ها از تنظیمات قالب می‌آیند و
   ستون‌های لینک از منوهای «footer_quick» و «footer_cats» (یا منوی پیش‌فرض قالب).
+  نوار پایین (footer-bottom) کاملاً از تنظیمات می‌آید؛ سال با توکن {gyear} (میلادی) یا
+  {year} (شمسی) نوشته می‌شود و دیگر عنصر data-year ندارد که main.js آن را بازنویسی کند.
   اسکریپت اصلی سایت از راه wp_footer() در چیدمان چاپ می‌شود (defer).
 --}}
 <!-- فوتر -->
@@ -38,9 +40,23 @@
         <div class="contact-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>{{ beryon_opt('general.work_hours') }}</span></div>
       </div>
     </div>
+@php
+  // نوار پایین پانوشت: هر سه متن از «تنظیمات قالب ← عمومی ← نوار پایین پانوشت» می‌آیند و
+  // خالی‌کردن هر کدام آن را حذف می‌کند (beryon_opt_raw مقدار خالی را با پیش‌فرض پر نمی‌کند).
+  $footer_prefix = trim(beryon_tokens((string) beryon_opt_raw('general.copyright_prefix')));
+  $footer_right  = trim(beryon_tokens((string) beryon_opt_raw('general.copyright')));
+  $footer_left   = trim(beryon_tokens((string) beryon_opt_raw('general.credit')));
+  $footer_right  = trim($footer_prefix . ' ' . $footer_right);
+@endphp
+@if ($footer_right !== '' || $footer_left !== '')
     <div class="footer-bottom">
-      <span>© <span data-year>{{ beryon_year() }}</span> — {!! beryon_tokens((string) beryon_opt('general.copyright')) !!}</span>
-      <span>{!! beryon_tokens((string) beryon_opt('general.credit')) !!}</span>
+@if ($footer_right !== '')
+      <span>{!! wp_kses_post($footer_right) !!}</span>
+@endif
+@if ($footer_left !== '')
+      <span>{!! wp_kses_post($footer_left) !!}</span>
+@endif
     </div>
+@endif
   </div>
 </footer>

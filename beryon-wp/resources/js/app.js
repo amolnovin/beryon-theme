@@ -377,6 +377,82 @@ import './main.js';
   });
 
   /* ============================================================== *
+   * پنجره (مودال): [data-modal-open="id"] باز می‌کند، [data-modal-close] و Esc می‌بندند
+   * ------------------------------------------------------------------
+   * پنجره کاتالوگ آنلاین (برگه کاتالوگ) از همین استفاده می‌کند. پنجره با
+   * visibility پنهان است تا محتوایش (فلیپ‌بوک) هنگام بارگذاری اندازه داشته باشد؛
+   * هنگام باز شدن یک رویداد resize فرستاده می‌شود تا نمایشگر خودش را با اندازه
+   * پنجره تنظیم کند. iframeهای دارای data-src فقط در نخستین باز شدن بار می‌شوند.
+   * ============================================================== */
+
+  var lastFocus = null;
+
+  function openModal(modal) {
+    if (!modal || modal.classList.contains('open')) {
+      return;
+    }
+    lastFocus = document.activeElement;
+    modal.querySelectorAll('iframe[data-src]').forEach(function (frame) {
+      frame.setAttribute('src', frame.getAttribute('data-src'));
+      frame.removeAttribute('data-src');
+    });
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('bmodal-lock');
+    var close = modal.querySelector('.bmodal-close');
+    [60, 400].forEach(function (delay, index) {
+      window.setTimeout(function () {
+        /* فوکوس پس از اعمال visibility: عنصرِ هنوز پنهان فوکوس نمی‌گیرد. */
+        if (index === 0 && close && modal.classList.contains('open')) {
+          close.focus({ preventScroll: true });
+        }
+        window.dispatchEvent(new Event('resize'));
+      }, delay);
+    });
+  }
+
+  function closeModal(modal) {
+    if (!modal || !modal.classList.contains('open')) {
+      return;
+    }
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.bmodal.open')) {
+      document.body.classList.remove('bmodal-lock');
+    }
+    if (lastFocus && typeof lastFocus.focus === 'function') {
+      lastFocus.focus({ preventScroll: true });
+    }
+  }
+
+  document.querySelectorAll('[data-modal-open]').forEach(function (trigger) {
+    trigger.addEventListener('click', function (event) {
+      var modal = document.getElementById(trigger.getAttribute('data-modal-open'));
+      if (modal) {
+        event.preventDefault();
+        openModal(modal);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-modal]').forEach(function (modal) {
+    modal.querySelectorAll('[data-modal-close]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        closeModal(modal);
+      });
+    });
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      var open = document.querySelector('.bmodal.open');
+      if (open) {
+        closeModal(open);
+      }
+    }
+  });
+
+  /* ============================================================== *
    * پرش به محتوای اصلی برای کاربر کیبورد
    * ============================================================== */
 

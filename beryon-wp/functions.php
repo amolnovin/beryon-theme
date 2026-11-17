@@ -142,8 +142,16 @@ add_action('shutdown', 'beryon_fatal_guard', 9999);
  * ۱) مسیرها و ثابت‌های قالب
  * ------------------------------------------------------------------ */
 
+/*
+ * نام ثابت‌ها عمداً BERYON_THEME_* است، نه BERYON_PATH / BERYON_VERSION: افزونه
+ * «سیستم نمایندگان فروش بریان» (beryon-agents) همان دو نام را برای مسیر و نسخه
+ * خودش تعریف می‌کند. تا نسخه ۱.۰.۵ قالب هم همان نام‌ها را داشت و در نتیجه افزونه
+ * با قالبِ فعال اصلاً فعال نمی‌شد (خطای مرگبار هنگام فعال‌سازی) و اگر از پیش فعال
+ * بود، قالب مسیر و نسخه افزونه را به‌جای خودش می‌خواند.
+ */
+
 /** ریشه قالب (بدون اسلش انتهایی) */
-define('BERYON_PATH', __DIR__);
+define('BERYON_THEME_PATH', __DIR__);
 
 /**
  * نسخه قالب — منبع حقیقت برای سیستم به‌روزرسانی Patch.
@@ -160,7 +168,7 @@ if (preg_match('/^Version:\s*(.+)$/mi', $beryon_style_head, $beryon_version_matc
     $beryon_version_match = '';
 }
 
-define('BERYON_VERSION', $beryon_version_match !== '' ? $beryon_version_match : '1.0.5');
+define('BERYON_THEME_VERSION', $beryon_version_match !== '' ? $beryon_version_match : '1.0.6');
 unset($beryon_style_head, $beryon_version_match);
 
 /** دامنه متنی */
@@ -170,7 +178,7 @@ define('BERYON_TD', 'beryon');
  * ۲) Autoload
  * ------------------------------------------------------------------ */
 
-if (file_exists($beryon_autoload = BERYON_PATH . '/vendor/autoload.php')) {
+if (file_exists($beryon_autoload = BERYON_THEME_PATH . '/vendor/autoload.php')) {
     require_once $beryon_autoload;
 } else {
     // چاره‌جویی: PSR-4 ساده تا قالب بدون composer هم بالا بیاید (فقط کلاس‌های App\).
@@ -183,7 +191,7 @@ if (file_exists($beryon_autoload = BERYON_PATH . '/vendor/autoload.php')) {
             if (! str_starts_with($class, 'App\\')) {
                 return;
             }
-            $file = BERYON_PATH . '/app/' . str_replace('\\', '/', substr($class, 4)) . '.php';
+            $file = BERYON_THEME_PATH . '/app/' . str_replace('\\', '/', substr($class, 4)) . '.php';
             if (is_readable($file)) {
                 require_once $file;
             }
@@ -195,7 +203,7 @@ if (file_exists($beryon_autoload = BERYON_PATH . '/vendor/autoload.php')) {
  * ۳) توابع قالب (Template Tags)
  * ------------------------------------------------------------------ */
 
-require_once BERYON_PATH . '/app/helpers.php';
+require_once BERYON_THEME_PATH . '/app/helpers.php';
 
 /* ------------------------------------------------------------------ *
  * ۴) راه‌اندازی ماژول‌ها
@@ -213,9 +221,11 @@ $beryon_modules = [
     App\Products::class,   // CPT/تاکسونومی محصول، داده نرمال‌شده، Caching
     App\Seo::class,        // متا، اسکیما، سایت‌map، متاباکس سئو
     App\Forms::class,      // REST فرم‌ها، جدول پیام‌ها، کد پیگیری
+    App\Agents::class,     // پیوند با افزونه «نمایندگان فروش بریان»: برگه‌ها، نماها و فرم‌ها
     App\Optimize::class,   // DOM، lazy-load، srcset، حذف اسکریپت‌های اضافی
     App\Security::class,   // هدرهای امنیتی، سخت‌سازی، یکپارچگی فایل‌ها
-    App\Updater::class,    // به‌روزرسانی Patch-محور + نسخه + بک‌آپ + rollback
+    App\Updater::class,    // به‌روزرسانی با بسته Patch (فایل zip) + نسخه + بک‌آپ + rollback
+    App\Upgrade::class,    // ارتقای مقادیر ذخیره‌شده پس از به‌روزرسانی قالب (یک بار برای هر نسخه)
 ];
 
 if (is_admin()) {
@@ -340,7 +350,7 @@ add_action(
             return;
         }
 
-        update_option('beryon_welcome', BERYON_VERSION, true);
+        update_option('beryon_welcome', BERYON_THEME_VERSION, true);
 
         if (is_callable([App\Admin\SettingsPage::class, 'welcome_notice'])) {
             App\Admin\SettingsPage::welcome_notice();

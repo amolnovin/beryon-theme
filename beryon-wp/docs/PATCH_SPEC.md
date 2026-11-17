@@ -129,8 +129,6 @@ patch-1.1.0.zip
 
 | تنظیم | پیش‌فرض | اثر |
 |---|---|---|
-| `updater.allow_remote` | `false` | دانلود خودکار از فید غیرفعال است مگر فعال شود |
-| `updater.feed_url` | `''` | نشانی فید JSON (بند ۸) |
 | `updater.patch_slug_allowlist` | `app,resources,config,public/assets,docs,style.css,…` | فقط این مسیرهای ریشه مجازند |
 | `updater.patch_ext_allowlist` | `php,css,js,json,md,svg,webp,woff2,txt` | فقط این پسوندها |
 | `updater.max_patch_size` | `52428800` (۵۰MB) | سقف حجم zip |
@@ -231,28 +229,27 @@ $signature = hash_hmac('sha256', file_get_contents('patch.json'), $key);
 
 ---
 
-## ۸) فید به‌روزرسانی (اختیاری)
+## ۸) نصب بسته (فقط از فایل zip)
 
-نشانی JSON که `updater.feed_url` به آن اشاره می‌کند:
+از نسخه ۱.۰.۶ بسته Patch **فقط با بارگذاری فایل zip** نصب می‌شود؛ قالب هیچ فایلی را
+از سرور دیگری دریافت نمی‌کند. «فید به‌روزرسانی»، تنظیم‌های `updater.feed_url`،
+`updater.allow_remote`، `updater.auto_check`، `updater.check_interval` و
+`updater.channel`، رویداد WP-Cron بررسی فید و اعلان «به‌روزرسانی موجود است» حذف
+شده‌اند (روی سایتی که از نسخه پیشین ارتقا می‌یابد، در نخستین بارگذاری پاک می‌شوند).
 
-```json
-{
-  "version": "1.1.0",
-  "channel": "stable",
-  "url": "https://example.com/beryon/patches/patch-1.1.0.zip",
-  "sha256": "1f3a…",
-  "label": "رفع باگ سئو و بهینه‌سازی CSS",
-  "notes": "…",
-  "released_at": "2026-10-27T09:30:00+03:30",
-  "requires": { "php": "8.0", "wordpress": "6.3", "theme_min": "1.0.0" },
-  "auto_install": false
-}
-```
+دو جای پنل همان فرم را دارند:
 
-* `sha256` در سطح فید، hash **کل فایل zip** است و پیش از اعمال بررسی می‌شود.
-* `auto_install: true` فقط وقتی مؤثر است که `updater.allow_remote` فعال باشد.
-* درخواست فید با `wp_remote_get`، timeout کوتاه و فقط در WP-Cron انجام می‌شود
-  تا زمان پاسخ صفحات سایت افزایش نیابد.
+* «قالب بریون ← تنظیمات قالب ← زبانه به‌روزرسانی (Patch)»
+  (`admin.php?page=beryon-settings&tab=updater`)
+* «قالب بریون ← به‌روزرسانی (Patch)» (`admin.php?page=beryon-updates`) همراه با
+  پشتیبان‌ها، تاریخچه، لاگ و یکپارچگی فایل‌ها
+
+فایل zip را انتخاب کنید، در صورت نیاز «حالت آزمایشی» را بزنید (فقط اعتبارسنجی و
+نمایش برنامه تغییرات) و «بررسی و نصب بسته». پیش از بارگذاری، مرورگر وجود فایل،
+پسوند `.zip` و اندازه را بررسی می‌کند و همین بررسی‌ها در سرور تکرار می‌شود. سقف
+اندازه = کوچک‌ترینِ `updater.max_patch_size` و سقف بارگذاری PHP میزبان.
+
+از خط فرمان: `wp beryon patch apply <file.zip> [--dry-run]`.
 
 ---
 
@@ -277,8 +274,6 @@ wp beryon patch apply /tmp/patch-1.1.0.zip --yes
 wp beryon patch backups
 wp beryon patch rollback beryon-backup-2026-10-27-093000.zip --yes
 
-# وضعیت فید
-wp beryon patch feed --check
 ```
 
 ### با PHP (برای خط ساخت CI)
@@ -322,7 +317,7 @@ echo $zip; // مسیر فایل zip تولیدشده
 
 ## ۱۱) چک‌لیست انتشار یک Patch
 
-1. نسخه را در `style.css` و `functions.php` (`BERYON_VERSION`) بالا ببرید.
+1. نسخه را در `style.css` و `functions.php` (`BERYON_THEME_VERSION`) بالا ببرید.
 2. اگر `public/assets/*` تغییر کرده، بیلد دارایی‌ها را تازه کنید
    (`npm run build` یا `python3 tools/build_assets.py`).
 3. `wp beryon patch build --version=X.Y.Z --dir=…` را اجرا کنید (یا در مخزن:
@@ -333,7 +328,7 @@ echo $zip; // مسیر فایل zip تولیدشده
 6. اگر امضا فعال است: بسته‌ای که `wp beryon patch build` روی سایتِ دارای کلید
    می‌سازد خودش امضا دارد (کلید `signature`)؛ برای بسته `tools/make_patch.py` یا
    بسته دست‌ساز، `signature.txt` را طبق بند ۷ بسازید و در ریشه zip بگذارید.
-7. بسته را در فید منتشر کنید (یا برای نصب دستی در پنل آپلود کنید).
+7. فایل zip بسته را به مدیر سایت بدهید تا از پنل (زبانه «به‌روزرسانی (Patch)») بارگذاری و نصب کند.
 8. در سایت اصلی: `wp beryon integrity` و `wp beryon doctor` را اجرا کنید.
 
 ---

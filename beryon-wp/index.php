@@ -12,7 +12,7 @@
 
 defined('ABSPATH') || exit;
 
-if (! defined('BERYON_PATH')) {
+if (! defined('BERYON_THEME_PATH')) {
     require_once __DIR__ . '/functions.php';
 }
 

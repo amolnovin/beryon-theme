@@ -62,6 +62,10 @@ final class Settings
 
         self::$cache = self::merge($defaults, $stored);
 
+        // همه شماره‌های تماس بدون خط تیره نمایش داده می‌شوند (۰۱۱-۴۴۴۴۸۰۷۱ → ۰۱۱۴۴۴۴۸۰۷۱)،
+        // چه مقدار پیش‌فرض باشد چه مقداری که پیش‌تر در پایگاه داده ذخیره شده است.
+        self::$cache = self::plain_phones(self::$cache);
+
         /**
          * فیلتر همه تنظیمات قالب.
          *
@@ -131,6 +135,103 @@ final class Settings
     }
 
     /**
+     * مقدار یک تنظیم «همان‌طور که هست»: مقدار خالیِ ذخیره‌شده، خالی برمی‌گردد.
+     *
+     * opt() مقدار خالی را با پیش‌فرض قالب جایگزین می‌کند؛ برای فیلدهایی که مدیر باید
+     * بتواند خالی‌شان کند (متن‌های نوار پایین پانوشت، نشانی‌ها و شورت‌کدهای اختیاری)
+     * از این متد استفاده می‌شود. پیش‌فرض فقط وقتی برمی‌گردد که کلید اصلاً وجود نداشته باشد.
+     *
+     * @param string $key     نقطه‌مسیر (group.name)
+     * @param mixed  $default مقدار جایگزین برای کلید ناموجود
+     * @return mixed
+     */
+    public static function raw(string $key, $default = null)
+    {
+        $value = self::all();
+
+        foreach (explode('.', $key) as $part) {
+            if (is_array($value) && array_key_exists($part, $value)) {
+                $value = $value[$part];
+            } else {
+                return $default;
+            }
+        }
+
+        return $value === null ? $default : $value;
+    }
+
+    /**
+     * حذف خط تیره از شماره‌های تماس در یک متن (۰۱۱-۴۴۴۴۸۰۷۱ → ۰۱۱۴۴۴۴۸۰۷۱).
+     *
+     * فقط الگوی «پیش‌شماره‌ای که با صفر شروع می‌شود + خط تیره + ۴ تا ۸ رقم» عوض می‌شود
+     * (ارقام لاتین، فارسی یا عربی)؛ بازه‌ها («۵۵-۹۰ درصد»)، تاریخ‌ها و کد استانداردها
+     * دست نمی‌خورند.
+     *
+     * @param string $text متن
+     * @return string
+     */
+    public static function plain_phone(string $text): string
+    {
+        if ($text === '' || preg_match('/[-‐‑‒–—−]/u', $text) !== 1) {
+            return $text;
+        }
+
+        $digit  = '[0-9۰-۹٠-٩]';
+        $result = preg_replace(
+            '/(?<!' . $digit . ')([0۰٠]' . $digit . '{2,3})[ \x{00A0}]?[-‐‑‒–—−][ \x{00A0}]?(' . $digit . '{4,8})(?!' . $digit . ')/u',
+            '$1$2',
+            $text
+        );
+
+        return is_string($result) ? $result : $text;
+    }
+
+    /**
+     * اعمال plain_phone() روی همه متن‌های تنظیمات.
+     *
+     * نشانی‌ها، شورت‌کدها، کدهای جاسازی و گروه‌های فنی کنار گذاشته می‌شوند تا مثلاً
+     * نام فایلی مثل catalog-0211-2024.pdf خراب نشود.
+     *
+     * @param array<mixed> $values مقادیر
+     * @param string       $parent نام کلید والد (ردیف‌های یک فهرست نام والد را می‌گیرند)
+     * @param int          $depth  عمق
+     * @return array<mixed>
+     */
+    public static function plain_phones(array $values, string $parent = '', int $depth = 0): array
+    {
+        foreach ($values as $name => $value) {
+            $key = is_string($name) ? $name : $parent;
+
+            if (is_array($value)) {
+                // گروه‌های فنی متن نمایشی ندارند.
+                if ($depth === 0 && in_array($key, ['security', 'updater', 'performance'], true)) {
+                    continue;
+                }
+
+                $values[$name] = self::plain_phones($value, $key, $depth + 1);
+
+                continue;
+            }
+
+            if (! is_string($value) || $value === '') {
+                continue;
+            }
+
+            if (preg_match('/(^|_)(url|href|src|link|embed|file|image|photo|icon|slug|shortcode|key|id|pattern|format)$/', $key) === 1) {
+                continue;
+            }
+
+            if (strpos($value, '://') !== false || strpos($value, 'href=') !== false || strpos($value, 'src=') !== false) {
+                continue;
+            }
+
+            $values[$name] = self::plain_phone($value);
+        }
+
+        return $values;
+    }
+
+    /**
      * بارگذاری مقادیر پیش‌فرض از فایل JSON.
      *
      * @return array<string,mixed>
@@ -141,7 +242,7 @@ final class Settings
             return self::$defaults;
         }
 
-        $file = BERYON_PATH . '/config/defaults.json';
+        $file = BERYON_THEME_PATH . '/config/defaults.json';
         $json = is_readable($file) ? (string) file_get_contents($file) : '';
         $data = json_decode($json, true);
 
@@ -169,7 +270,7 @@ final class Settings
             return self::$json[$file];
         }
 
-        $path = BERYON_PATH . '/config/' . $file;
+        $path = BERYON_THEME_PATH . '/config/' . $file;
         $raw  = is_readable($path) ? (string) file_get_contents($path) : '';
         $data = json_decode($raw, true);
 

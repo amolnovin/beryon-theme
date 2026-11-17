@@ -250,9 +250,16 @@ final class Seo
                 // نوشته رمزدار: چکیده و متن آن نباید در متای صفحه (description، Open Graph
                 // و JSON-LD) فاش شود؛ توضیح عمومی سایت جایگزین می‌شود.
                 if ($post instanceof \WP_Post && ! \post_password_required($post)) {
+                    // شورت‌کدها متن نیستند: برگه‌ای که فقط «[beryon_agent_application]» دارد نباید
+                    // همان را به‌عنوان توضیح صفحه به موتور جست‌وجو بدهد.
                     $description = $post->post_excerpt !== ''
                         ? \beryon_excerpt_text(\beryon_plain_excerpt((string) $post->post_excerpt, 165), 165)
-                        : \beryon_excerpt_text((string) $post->post_content, 165);
+                        : \beryon_excerpt_text(self::without_shortcodes((string) $post->post_content), 165);
+
+                    // برگه‌های قالب (تماس، نمایندگی، چارت و…) متن معرفی‌شان در تنظیمات قالب است.
+                    if ($description === '' && $post->post_type === 'page') {
+                        $description = self::page_lead();
+                    }
                 }
             }
 
@@ -285,6 +292,48 @@ final class Seo
         $computed    = \beryon_excerpt_text($description, 165);
 
         return $computed;
+    }
+
+    /**
+     * متن بدون شورت‌کد (ثبت‌شده یا نشده).
+     *
+     * @param string $content متن برگه
+     * @return string
+     */
+    private static function without_shortcodes(string $content): string
+    {
+        if ($content === '' || strpos($content, '[') === false) {
+            return $content;
+        }
+
+        return (string) preg_replace('/\[\/?[A-Za-z][A-Za-z0-9_\-]*(?:\s[^\]]*)?\]/u', ' ', $content);
+    }
+
+    /**
+     * متن معرفیِ برگه قالبِ جاری از تنظیمات (مثلاً agency.lead برای برگه نمایندگی).
+     *
+     * @return string
+     */
+    private static function page_lead(): string
+    {
+        $groups = [
+            'page-about'        => 'about',
+            'page-ceo'          => 'ceo',
+            'page-org-chart'    => 'org',
+            'page-certificates' => 'certificates',
+            'page-contact-us'   => 'contact',
+            'page-feedback'     => 'feedback',
+            'page-agency'       => 'agency',
+            'page-catalog'      => 'catalog',
+        ];
+
+        foreach (Template::candidates() as $view) {
+            if (isset($groups[$view])) {
+                return (string) Settings::opt($groups[$view] . '.lead', '');
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -1035,7 +1084,14 @@ final class Seo
             ]
         );
 
+        // برگه‌های پنل افزونه نمایندگان (نیازمند ورود، noindex) در نقشه سایت نمی‌آیند.
+        $private_pages = array_filter([Agents::page_id('agent'), Agents::page_id('admin')]);
+
         foreach ($query->posts as $post_id) {
+            if (in_array((int) $post_id, $private_pages, true)) {
+                continue;
+            }
+
             $entry = [
                 'loc'        => (string) \get_permalink($post_id),
                 'lastmod'    => \get_the_modified_date('c', $post_id),
