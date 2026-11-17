@@ -469,7 +469,7 @@ final class Seeder
 
             $template = self::PAGE_TEMPLATES[$slug] ?? '';
 
-            if ($template !== '' && is_readable(BERYON_PATH . '/resources/views/' . $template . '.blade.php')) {
+            if ($template !== '' && is_readable(BERYON_THEME_PATH . '/resources/views/' . $template . '.blade.php')) {
                 $stored = (string) \get_post_meta($page_id, '_wp_page_template', true);
 
                 if ($force || $stored === '' || $stored === 'default') {
@@ -530,7 +530,7 @@ final class Seeder
      */
     private static function posts(bool $force = false): int
     {
-        $file = BERYON_PATH . '/config/blog.json';
+        $file = BERYON_THEME_PATH . '/config/blog.json';
         $data = is_readable($file) ? json_decode((string) file_get_contents($file), true) : null;
 
         if (! is_array($data) || empty($data['posts'])) {
@@ -658,7 +658,7 @@ final class Seeder
      */
     private static function media(): int
     {
-        $dir = BERYON_PATH . '/public/assets/images';
+        $dir = BERYON_THEME_PATH . '/public/assets/images';
 
         if (! is_dir($dir)) {
             return 0;

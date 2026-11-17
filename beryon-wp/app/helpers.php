@@ -115,6 +115,29 @@ function beryon_opt(string $key, $default = null)
 }
 
 /**
+ * مقدار یک تنظیم بدون جایگزینی «خالی → پیش‌فرض» (فیلدی که مدیر می‌تواند خالی کند).
+ *
+ * @param string $key     نقطه‌مسیر
+ * @param mixed  $default مقدار جایگزین برای کلید ناموجود
+ * @return mixed
+ */
+function beryon_opt_raw(string $key, $default = '')
+{
+    return Settings::raw($key, $default);
+}
+
+/**
+ * شماره تماس بدون خط تیره (۰۱۱-۴۴۴۴۸۰۷۱ → ۰۱۱۴۴۴۴۸۰۷۱) برای متن‌هایی که از تنظیمات نمی‌آیند.
+ *
+ * @param string $text متن
+ * @return string
+ */
+function beryon_phone_plain(string $text): string
+{
+    return Settings::plain_phone($text);
+}
+
+/**
  * چند تنظیم یک‌جا.
  *
  * @param array<string,mixed> $defaults کلید => پیش‌فرض
@@ -337,7 +360,7 @@ function beryon_icons(): array
         return $icons;
     }
 
-    $file = BERYON_PATH . '/config/icons.json';
+    $file = BERYON_THEME_PATH . '/config/icons.json';
     $data = is_readable($file) ? json_decode((string) file_get_contents($file), true) : null;
 
     $icons = is_array($data) && isset($data['icons']) ? (array) $data['icons'] : [];
@@ -557,7 +580,7 @@ function beryon_active_nav(): string
     if ($template === '' && is_singular('page')) {
         $beryon_slug = (string) get_post_field('post_name', get_queried_object_id());
 
-        if ($beryon_slug !== '' && is_readable(BERYON_PATH . '/resources/views/page-' . $beryon_slug . '.blade.php')) {
+        if ($beryon_slug !== '' && is_readable(BERYON_THEME_PATH . '/resources/views/page-' . $beryon_slug . '.blade.php')) {
             $template = 'page-' . $beryon_slug;
         }
     }
@@ -586,7 +609,41 @@ function beryon_active_nav(): string
 }
 
 /**
+ * نامک‌های جایگزین هر برگه قالب (کلید = بخش کلیدی نام قالب).
+ *
+ * سایت‌هایی که از پیش محتوا دارند برگه‌ها را با نامک دیگری ساخته‌اند (مثلاً
+ * ‎/organizational-chart/‎ بدون والد «about-us»، یا «فرم-درخواست-نمایندگی»). همین
+ * فهرست هم برای پیدا کردن نشانی برگه و هم برای انتخاب نمای آن به‌کار می‌رود.
+ *
+ * @return array<string,array<int,string>>
+ */
+function beryon_page_slugs(): array
+{
+    $slugs = [
+        'about'        => ['about-us', 'about'],
+        'ceo'          => ['about-us/introduction-of-ceo', 'introduction-of-ceo', 'about-us/ceo', 'ceo'],
+        'org-chart'    => ['about-us/organizational-chart', 'organizational-chart', 'about-us/org-chart', 'org-chart'],
+        'certificates' => ['about-us/certificates', 'certificates'],
+        'contact-us'   => ['contact-us', 'contact'],
+        'catalog'      => ['catalog'],
+        'feedback'     => ['feedback'],
+        'agency'       => ['agency', 'فرم-درخواست-نمایندگی', 'درخواست-نمایندگی', 'agency-request'],
+    ];
+
+    /**
+     * فیلتر نامک‌های جایگزین برگه‌های قالب.
+     *
+     * @param array<string,array<int,string>> $slugs کلید نما (page-<کلید>) → مسیرها
+     */
+    return (array) apply_filters('beryon/page_slugs', $slugs);
+}
+
+/**
  * لینک یک صفحه قالب بر اساس نام قالب (Template Name) یا اسلاگ.
+ *
+ * ترتیب: برگه «درخواست نمایندگی» افزونه نمایندگان (برای agency) ← مسیر داده‌شده ←
+ * برگه‌ای که قالب برگه را دارد ← نامک‌های جایگزین (beryon_page_slugs) ← صفحه اصلی.
+ * نتیجه در طول همان درخواست نگه داشته می‌شود (سربرگ، منو و پابرگ بارها صدا می‌زنند).
  *
  * @param string $slug     اسلاگ صفحه، مثال: about-us
  * @param string $template بخش کلیدی نام قالب، مثال: about
@@ -594,33 +651,79 @@ function beryon_active_nav(): string
  */
 function beryon_page_url(string $slug, string $template = ''): string
 {
-    $page = get_page_by_path($slug);
+    static $memo = [];
 
-    if ($page instanceof WP_Post) {
-        return (string) get_permalink($page);
+    $key = $slug . '|' . $template;
+
+    if (isset($memo[$key])) {
+        return $memo[$key];
     }
 
-    if ($template !== '') {
+    $url = '';
+
+    if ($template === 'agency') {
+        $url = App\Agents::page_url('application');
+    }
+
+    if ($url === '') {
+        $page = get_page_by_path($slug);
+
+        if ($page instanceof WP_Post && $page->post_status === 'publish') {
+            $url = (string) get_permalink($page);
+        }
+    }
+
+    // کلید نما: «org» و «contact» در فراخوانی‌های قدیمی همان page-org-chart و page-contact-us هستند.
+    $view = ['org' => 'org-chart', 'contact' => 'contact-us'][$template] ?? $template;
+
+    if ($url === '' && $template !== '') {
         $by_template = get_posts(
             [
                 'post_type'      => 'page',
+                'post_status'    => 'publish',
                 'posts_per_page' => 1,
                 'fields'         => 'ids',
                 'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery
                     [
-                        'key'   => '_wp_page_template',
-                        'value' => 'views/page-' . $template . '.blade.php',
+                        'key'     => '_wp_page_template',
+                        'value'   => array_unique(['views/page-' . $view . '.blade.php', 'views/page-' . $template . '.blade.php']),
+                        'compare' => 'IN',
                     ],
                 ],
             ]
         );
 
         if (! empty($by_template)) {
-            return (string) get_permalink((int) $by_template[0]);
+            $url = (string) get_permalink((int) $by_template[0]);
         }
     }
 
-    return home_url('/');
+    if ($url === '' && $template !== '') {
+        foreach ((array) (beryon_page_slugs()[$view] ?? []) as $alias) {
+            if ((string) $alias === $slug) {
+                continue;
+            }
+
+            $page = get_page_by_path((string) $alias);
+
+            if ($page instanceof WP_Post && $page->post_status === 'publish') {
+                $url = (string) get_permalink($page);
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * فیلتر نشانی برگه قالب.
+     *
+     * @param string $url      نشانی پیداشده (یا صفحه اصلی)
+     * @param string $slug     مسیر درخواستی
+     * @param string $template کلید قالب
+     */
+    $memo[$key] = (string) apply_filters('beryon/page_url', $url !== '' ? $url : home_url('/'), $slug, $template);
+
+    return $memo[$key];
 }
 
 /**
@@ -647,7 +750,7 @@ function beryon_products_url(): string
 /**
  * جای‌گذاری توکن‌های محتوایی در متن تنظیمات.
  *
- * توکن‌ها: {count} {year} {brand} {company} {phone_factory} {phone_factory_label}
+ * توکن‌ها: {count} {year} (سال شمسی) {gyear} (سال میلادی) {brand} {company} {phone_factory} {phone_factory_label}
  * {phone_sales} {phone_sales_label} {phone_admin} {phone_admin_label} {email}
  * {address} {address_full} {site_name} {site_url}
  *
@@ -669,6 +772,7 @@ function beryon_tokens(string $text): string
     $map = [
         '{count}'     => beryon_fa((string) App\Products::total_count()),
         '{year}'      => beryon_year(),
+        '{gyear}'     => beryon_fa((string) wp_date('Y')),
         '{brand}'     => (string) beryon_opt('general.brand_name', 'بریون'),
         '{company}'   => (string) beryon_opt('general.company_name', 'شرکت بریان گوشت آمل'),
         '{site_name}' => (string) get_bloginfo('name'),
@@ -846,6 +950,119 @@ function beryon_blog_url(): string
 function beryon_form_url(): string
 {
     return (string) rest_url(App\Forms::REST_NS . '/form');
+}
+
+/**
+ * نشانیِ مجازِ یک کد جاسازی نقشه (کد ‎<iframe>‎ یا خودِ نشانی).
+ *
+ * فقط نشانی https روی دامنه‌های همان سرویس پذیرفته می‌شود؛ هر چیز دیگری رشته خالی
+ * برمی‌گرداند تا هیچ iframe دلخواهی از راه تنظیمات وارد صفحه نشود.
+ *
+ * @param string $code    کد ‎<iframe …>‎ یا نشانی
+ * @param string $service google | neshan
+ * @return string
+ */
+function beryon_embed_src(string $code, string $service): string
+{
+    $code = trim($code);
+
+    if ($code === '') {
+        return '';
+    }
+
+    if (stripos($code, '<iframe') !== false) {
+        if (preg_match('/<iframe\b[^>]*\bsrc\s*=\s*(["\'])(.*?)\1/is', $code, $match) !== 1) {
+            return '';
+        }
+
+        $code = $match[2];
+    }
+
+    $url   = trim(html_entity_decode($code, ENT_QUOTES, 'UTF-8'));
+    $parts = wp_parse_url($url);
+
+    if (! is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) {
+        return '';
+    }
+
+    $host = strtolower((string) $parts['host']);
+    $path = (string) ($parts['path'] ?? '');
+
+    $allowed = [
+        'google' => ['www.google.com', 'google.com', 'maps.google.com'],
+        'neshan' => ['neshan.org', 'www.neshan.org'],
+    ];
+
+    /**
+     * فیلتر دامنه‌های مجاز کد جاسازی نقشه.
+     *
+     * @param array<string,array<int,string>> $allowed سرویس → دامنه‌ها
+     */
+    $allowed = (array) apply_filters('beryon/map/embed_hosts', $allowed);
+
+    if (! isset($allowed[$service]) || ! in_array($host, (array) $allowed[$service], true) || strpos($path, '/maps') !== 0) {
+        return '';
+    }
+
+    return (string) esc_url_raw($url, ['https']);
+}
+
+/**
+ * نقشه کارت «موقعیت کارخانه» در برگه تماس (تنظیم contact.map_provider).
+ *
+ * google : کد جاسازی ذخیره‌شده، وگرنه نقشه ساخته‌شده از مختصات (بدون کلید API).
+ * neshan : فقط کد جاسازی‌ای که از neshan.org گرفته شده است.
+ * اگر نشانیِ معتبری به‌دست نیاید، کارت ساده (بدون نقشه) نمایش داده می‌شود.
+ *
+ * @return array{provider:string,src:string,height:int}
+ */
+function beryon_contact_map(): array
+{
+    $provider = (string) beryon_opt('contact.map_provider', 'google');
+    $provider = in_array($provider, ['google', 'neshan'], true) ? $provider : 'none';
+    $src      = '';
+
+    if ($provider === 'google') {
+        $src = beryon_embed_src((string) beryon_opt_raw('contact.map_google_embed', ''), 'google');
+
+        if ($src === '') {
+            $lat  = trim((string) beryon_opt('contact.map_lat', ''));
+            $lng  = trim((string) beryon_opt('contact.map_lng', ''));
+            $zoom = max(3, min(20, (int) beryon_opt('contact.map_zoom', 15)));
+
+            if (preg_match('/^-?\d{1,2}(\.\d+)?$/', $lat) === 1 && preg_match('/^-?\d{1,3}(\.\d+)?$/', $lng) === 1
+                && abs((float) $lat) <= 90 && abs((float) $lng) <= 180) {
+                // نشانی جاسازیِ بدون کلید API گوگل‌مپ (همان چیزی که «Embed a map» می‌سازد، با مختصات).
+                $src = 'https://maps.google.com/maps?q=' . $lat . ',' . $lng . '&z=' . $zoom . '&hl=fa&output=embed';
+            }
+        }
+    } elseif ($provider === 'neshan') {
+        $src = beryon_embed_src((string) beryon_opt_raw('contact.map_neshan_embed', ''), 'neshan');
+    }
+
+    $map = [
+        'provider' => $src !== '' ? $provider : 'none',
+        'src'      => $src,
+        'height'   => max(200, min(640, (int) beryon_opt('contact.map_height', 320))),
+    ];
+
+    /**
+     * فیلتر نقشه برگه تماس.
+     *
+     * @param array $map provider | src | height
+     */
+    return (array) apply_filters('beryon/contact/map', $map);
+}
+
+/**
+ * آیا شورت‌کدِ نوشته‌شده در یک متن قابل اجراست (افزونه‌اش فعال است)؟
+ *
+ * @param string $text متنی که با یک شورت‌کد شروع می‌شود، مثل ‎[dflip id="1"][/dflip]‎
+ * @return bool
+ */
+function beryon_shortcode_ready(string $text): bool
+{
+    return preg_match('/\[([A-Za-z][A-Za-z0-9_\-]*)/', $text, $match) === 1 && shortcode_exists($match[1]);
 }
 
 /**
@@ -1034,7 +1251,7 @@ function beryon_latest_posts(int $limit = 3, string $excerpt_key = 'home_excerpt
     // نسخه قالب در کلید: ساختار کارت‌های کش‌شده بین نسخه‌ها عوض می‌شود. این کش با
     // ذخیره/حذف هر نوشته و تغییر تصویر شاخص در Products::flush_cache() پاک می‌شود.
     // زبان جاری هم جزو کلید است: روی سایت چندزبانه نوشته‌های هر زبان جدا کش می‌شود.
-    $cache_key = 'beryon_posts_' . $limit . '_' . $excerpt_key . '_' . BERYON_VERSION . (App\Lang::cache_key() !== '' ? '_' . App\Lang::cache_key() : '');
+    $cache_key = 'beryon_posts_' . $limit . '_' . $excerpt_key . '_' . BERYON_THEME_VERSION . (App\Lang::cache_key() !== '' ? '_' . App\Lang::cache_key() : '');
     $cached    = get_transient($cache_key);
 
     if (is_array($cached)) {

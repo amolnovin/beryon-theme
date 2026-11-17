@@ -154,6 +154,40 @@ final class Assets
         }
     }
 
+    /** نامک صفحه‌های پیشخوانِ خودِ قالب (‎?page=…‎) */
+    public const ADMIN_PAGES = ['beryon-settings', 'beryon-submissions', 'beryon-updates', 'beryon-tools', 'beryon-docs'];
+
+    /**
+     * آیا صفحه جاری پیشخوان یکی از صفحه‌های قالب است؟
+     *
+     * @param string $hook هوک صفحه (admin_enqueue_scripts)
+     * @return bool
+     */
+    public static function is_theme_screen(string $hook = ''): bool
+    {
+        $page  = isset($_GET['page']) ? (string) \sanitize_key(\wp_unslash($_GET['page'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $match = in_array($page, self::ADMIN_PAGES, true);
+
+        if (! $match && $hook !== '') {
+            foreach (self::ADMIN_PAGES as $slug) {
+                if (substr($hook, -strlen('_page_' . $slug)) === '_page_' . $slug) {
+                    $match = true;
+
+                    break;
+                }
+            }
+        }
+
+        /**
+         * فیلتر «این صفحه پیشخوان متعلق به قالب است» (برای صفحه‌های سفارشی).
+         *
+         * @param bool   $match نتیجه
+         * @param string $hook  هوک صفحه
+         * @param string $page  مقدار ‎?page=‎
+         */
+        return (bool) \apply_filters('beryon/admin/is_theme_screen', $match, $hook, $page);
+    }
+
     /**
      * دارایی پنل تنظیمات قالب.
      *
@@ -162,11 +196,10 @@ final class Assets
      */
     public static function admin_assets(string $hook): void
     {
-        // صفحه‌های قالب با اسلاگ beryon-* ثبت می‌شوند؛ هم $hook و هم ?page= بررسی
-        // می‌شود تا در هیچ چیدمان منویی استایل پنل از دست نرود.
-        $page = isset($_GET['page']) ? (string) \sanitize_key(\wp_unslash($_GET['page'])) : '';
-
-        if (strpos($hook, 'beryon') === false && strpos($page, 'beryon') === false) {
+        // فقط صفحه‌های خودِ قالب (فهرست ADMIN_PAGES). پیش‌تر هر صفحه‌ای که «beryon» در
+        // نامش بود پذیرفته می‌شد و CSS/JS پنل قالب روی صفحه تنظیمات افزونه «نمایندگان
+        // فروش بریان» (beryon-agent-settings) هم بار می‌شد.
+        if (! self::is_theme_screen($hook)) {
             return;
         }
 
@@ -291,7 +324,7 @@ final class Assets
         foreach ([$buildPath, 'resources/' . $buildPath] as $key) {
             if (isset($manifest[$key]['file'])) {
                 $relative = ltrim((string) $manifest[$key]['file'], '/');
-                $absolute = BERYON_PATH . '/public/assets/' . $relative;
+                $absolute = BERYON_THEME_PATH . '/public/assets/' . $relative;
 
                 // اگر خروجی بیلد واقعاً روی دیسک نباشد، به مرحله بعد می‌رویم؛
                 // در غیر این‌صورت یک ۴۰۴ خاموش کل استایل سایت را می‌گیرد.
@@ -308,7 +341,7 @@ final class Assets
         }
 
         // ۲) خروجی از پیش بیلدشده
-        $built = BERYON_PATH . '/public/assets/' . ltrim($buildPath, '/');
+        $built = BERYON_THEME_PATH . '/public/assets/' . ltrim($buildPath, '/');
 
         if (is_readable($built)) {
             return [
@@ -319,18 +352,18 @@ final class Assets
         }
 
         // ۳) فایل خام
-        if ($sourcePath !== '' && is_readable(BERYON_PATH . '/' . $sourcePath)) {
+        if ($sourcePath !== '' && is_readable(BERYON_THEME_PATH . '/' . $sourcePath)) {
             return [
                 'url'     => self::theme_url($sourcePath),
-                'version' => self::file_version(BERYON_PATH . '/' . $sourcePath),
-                'path'    => BERYON_PATH . '/' . $sourcePath,
+                'version' => self::file_version(BERYON_THEME_PATH . '/' . $sourcePath),
+                'path'    => BERYON_THEME_PATH . '/' . $sourcePath,
             ];
         }
 
         // ۴) در هر حالت یک URL معتبر برگردان (از خطای ۴۰۴ پرسر و صدا جلوگیری می‌کند)
         return [
             'url'     => self::public_url(ltrim($buildPath, '/')),
-            'version' => BERYON_VERSION,
+            'version' => BERYON_THEME_VERSION,
             'path'    => '',
         ];
     }
@@ -346,7 +379,7 @@ final class Assets
     {
         $css = self::readSources($sources);
 
-        \wp_register_style($handle, false, [], BERYON_VERSION); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters
+        \wp_register_style($handle, false, [], BERYON_THEME_VERSION); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters
         \wp_enqueue_style($handle);
 
         if ($css !== '') {
@@ -367,7 +400,7 @@ final class Assets
     {
         $js = self::readSources($sources);
 
-        \wp_register_script($handle, false, [], BERYON_VERSION, true); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters
+        \wp_register_script($handle, false, [], BERYON_THEME_VERSION, true); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters
         \wp_enqueue_script($handle);
 
         if ($js !== '') {
@@ -388,7 +421,7 @@ final class Assets
         $out = '';
 
         foreach ($sources as $source) {
-            $path = BERYON_PATH . '/' . ltrim((string) $source, '/');
+            $path = BERYON_THEME_PATH . '/' . ltrim((string) $source, '/');
 
             if (! is_readable($path)) {
                 continue;
@@ -430,10 +463,10 @@ final class Assets
      */
     public static function version(string $path): string
     {
-        $absolute = BERYON_PATH . '/public/assets/' . ltrim($path, '/');
+        $absolute = BERYON_THEME_PATH . '/public/assets/' . ltrim($path, '/');
 
         if (! is_readable($absolute)) {
-            $absolute = BERYON_PATH . '/' . ltrim($path, '/');
+            $absolute = BERYON_THEME_PATH . '/' . ltrim($path, '/');
         }
 
         return self::file_version($absolute);
@@ -480,7 +513,7 @@ final class Assets
             }
         }
 
-        return BERYON_VERSION;
+        return BERYON_THEME_VERSION;
     }
 
     /**
@@ -494,7 +527,7 @@ final class Assets
             return self::$manifest;
         }
 
-        $file = BERYON_PATH . '/public/assets/manifest.json';
+        $file = BERYON_THEME_PATH . '/public/assets/manifest.json';
 
         if (! is_readable($file)) {
             self::$manifest = [];
@@ -568,10 +601,10 @@ final class Assets
 
         // ۳) دارایی قالب
         if ($url === '') {
-            $candidate = BERYON_PATH . '/public/assets/images/' . $name;
+            $candidate = BERYON_THEME_PATH . '/public/assets/images/' . $name;
 
             if (! is_readable($candidate)) {
-                $candidate = BERYON_PATH . '/resources/images/' . $name;
+                $candidate = BERYON_THEME_PATH . '/resources/images/' . $name;
 
                 if (is_readable($candidate)) {
                     $url = self::theme_url('resources/images/' . $name);
@@ -758,7 +791,7 @@ final class Assets
             }
         }
 
-        foreach ([BERYON_PATH . '/public/assets/images/', BERYON_PATH . '/resources/images/'] as $dir) {
+        foreach ([BERYON_THEME_PATH . '/public/assets/images/', BERYON_THEME_PATH . '/resources/images/'] as $dir) {
             $file = $dir . $name;
 
             if (is_readable($file)) {

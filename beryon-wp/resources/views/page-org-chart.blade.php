@@ -4,8 +4,10 @@
 {{--
   چارت سازمانی — قالب وردپرس بریون
   ------------------------------------------------------------------
-  مارک‌آپ دقیقاً مطابق org-chart.html؛ درخت سازمانی از ردیف‌های تنظیم‌پذیر
-  (org.units) ساخته می‌شود تا مدیر بتواند واحدها و زیرمجموعه‌ها را ویرایش کند.
+  درخت سازمانی از ردیف‌های تنظیم‌پذیر (org.units) ساخته می‌شود تا مدیر بتواند
+  واحدها و زیرمجموعه‌ها را ویرایش کند. از ۱.۰.۶ چارت سه سطح زیرِ ریشه دارد و با
+  خط‌های رابط نازک رسم می‌شود (کلاس org-chart در wp.css)؛ کلاس‌های org-tree و
+  org-node قالب HTML مرجع حفظ شده‌اند. چارت همیشه راست‌به‌چپ چیده می‌شود.
 --}}
 @extends('layouts.app')
 
@@ -25,17 +27,36 @@
 
   <section class="section" style="padding-top:56px">
     <div class="container">
-      <div class="org-tree reveal" role="img" aria-label="چارت سازمانی {!! beryon_amp(beryon_opt('general.company_name')) !!}">
+@php
+  // سطح سوم چارت: نام زیرمجموعه‌های هر زیرواحد در فیلد «sub» با «،» از هم جدا می‌شوند
+  // و هر کدام خانه جداگانه‌ای زیر همان زیرواحد می‌گیرند.
+  $org_split = static function ($text): array {
+      $parts = preg_split('/\s*[،,؛;]\s*/u', trim((string) $text)) ?: [];
+
+      return array_values(array_filter(array_map('trim', $parts), 'strlen'));
+  };
+  $org_root_name = trim((string) beryon_opt_raw('org.root_name', ''));
+@endphp
+      <div class="org-tree org-chart reveal" dir="rtl" role="img" aria-label="چارت سازمانی {!! beryon_amp(beryon_opt('general.company_name')) !!}">
         <ul>
           <li>
-            <span class="org-node root">{{ beryon_opt('org.root') }}<small>{{ beryon_opt('org.root_name') }}</small></span>
+            <span class="org-node root">{{ beryon_opt('org.root') }}{!! $org_root_name !== '' ? '<small>' . esc_html($org_root_name) . '</small>' : '' !!}</span>
             <ul>
 @foreach (beryon_rows('org.units') as $unit)
               <li><span class="org-node mgr">{!! beryon_amp($unit['title'] ?? '') !!}</span>
 @if (! empty($unit['children']))
                 <ul>
 @foreach ((array) $unit['children'] as $child)
-                  <li><span class="org-node">{!! beryon_amp($child['title'] ?? '') !!}{!! ! empty($child['sub']) ? '<small>' . esc_html($child['sub']) . '</small>' : '' !!}</span></li>
+@php($org_subs = $org_split($child['sub'] ?? ''))
+                  <li><span class="org-node">{!! beryon_amp($child['title'] ?? '') !!}</span>
+@if ($org_subs !== [])
+                    <ul>
+@foreach ($org_subs as $org_sub)
+                      <li><span class="org-node">{!! beryon_amp($org_sub) !!}</span></li>
+@endforeach
+                    </ul>
+@endif
+                  </li>
 @endforeach
                 </ul>
 @endif

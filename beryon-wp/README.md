@@ -82,7 +82,7 @@ beryon/
 │   ├── Optimize.php        حذف ایموجی/oembed/CSS اضافی، defer، lazy، کش کوئری
 │   ├── Security.php        هدرها، CSP، سخت‌سازی لاگین، اثر انگشت فایل‌ها
 │   ├── Forms.php           REST فرم‌ها (تماس/نظرات/نمایندگی/خبرنامه) + جدول
-│   ├── Updater.php         فید، بررسی، دانلود، AJAX، تاریخچه، WP-Cron
+│   ├── Updater.php         نسخه، تاریخچه، لاگ، AJAX اعمال/بازگردانی (نصب فقط از فایل zip)
 │   ├── Updater/PatchApplier.php  اعتبارسنجی، staging، پشتیبان، اعمال اتمیک
 │   ├── Nav.php / NavWalker.php   منوها (desktop/mobile/footer) با مارک‌آپ قالب
 │   ├── Products.php        نوع پست/تاکسونومی، متا، کوئری، نرمال‌سازی، دسته‌ها
@@ -192,10 +192,11 @@ wp beryon patch apply /tmp/patch.zip --yes
 wp beryon patch backups && wp beryon patch rollback <file> --yes
 ```
 
-در پنل (بریون ← به‌روزرسانی): آپلود zip، حالت آزمایشی (فهرست `add/replace/delete`
-بدون نوشتن فایل)، بررسی فید، بازگردانی، «بررسی یکپارچگی فایل‌ها» (مقایسه با اثر
-انگشت ثبت‌شده برای تشخیص دست‌کاری) و «بازسازی اثر انگشت» (پس از جایگزینی دستی
-فایل‌ها با zip/FTP).
+در پنل: فایل zip بسته را در «تنظیمات قالب ← زبانه به‌روزرسانی (Patch)» یا «بریون ←
+به‌روزرسانی (Patch)» انتخاب و نصب کنید (از ۱.۰.۶ فقط همین راه؛ قالب چیزی از سرور
+دیگری دریافت نمی‌کند). همان‌جا: حالت آزمایشی (فهرست `add/replace/delete` بدون نوشتن
+فایل)، بازگردانی، «بررسی یکپارچگی فایل‌ها» (مقایسه با اثر انگشت ثبت‌شده برای
+تشخیص دست‌کاری) و «بازسازی اثر انگشت» (پس از جایگزینی دستی فایل‌ها با zip/FTP).
 
 ---
 
@@ -303,7 +304,7 @@ wp beryon version
 wp beryon seed [--force] [--media] [--skip-pages] [--skip-posts]
 wp beryon options list [--group=seo] | get <key> | set <key> <value> | reset [--yes]
 wp beryon cache flush
-wp beryon patch inspect|apply|build|backups|rollback|feed
+wp beryon patch inspect|apply|build|backups|rollback
 wp beryon integrity [--refresh]
 wp beryon doctor
 wp beryon images [--regenerate]

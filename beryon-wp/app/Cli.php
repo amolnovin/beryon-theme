@@ -15,7 +15,6 @@
  *   wp beryon patch build --version=1.1.0 [--label=…] [--out=…] [--dir=…]
  *   wp beryon patch backups
  *   wp beryon patch rollback <file> [--yes]
- *   wp beryon patch feed [--check]
  *   wp beryon integrity [--refresh]
  *   wp beryon doctor
  *   wp beryon images [--regenerate]
@@ -43,9 +42,9 @@ final class Cli
      */
     public function version(): void
     {
-        \WP_CLI::line('beryon theme: ' . BERYON_VERSION);
+        \WP_CLI::line('beryon theme: ' . BERYON_THEME_VERSION);
         \WP_CLI::line('installed  : ' . Updater::version());
-        \WP_CLI::line('path       : ' . BERYON_PATH);
+        \WP_CLI::line('path       : ' . BERYON_THEME_PATH);
     }
 
     /**
@@ -264,7 +263,7 @@ final class Cli
      * ## OPTIONS
      *
      * <action>
-     * : inspect|apply|build|backups|rollback|feed
+     * : inspect|apply|build|backups|rollback
      *
      * [<file>]
      * : مسیر فایل zip
@@ -289,9 +288,6 @@ final class Cli
      *
      * [--dir=<path>]
      * : پوشه فایل‌های تغییریافته (برای build)
-     *
-     * [--check]
-     * : بررسی فید راه دور
      *
      * @subcommand patch
      *
@@ -427,34 +423,8 @@ final class Cli
                 \WP_CLI::success('بازگردانی انجام شد.');
                 break;
 
-            case 'feed':
-                if (! empty($assoc_args['check'])) {
-                    $result = Updater::check_remote();
-
-                    if (empty($result['ok'])) {
-                        \WP_CLI::error((string) ($result['message'] ?? 'feed failed'));
-                    }
-
-                    \WP_CLI::line('remote version : ' . (string) ($result['feed']['version'] ?? ''));
-                    \WP_CLI::line('current        : ' . Updater::version());
-                    \WP_CLI::line('update needed  : ' . (! empty($result['update']) ? 'yes' : 'no'));
-
-                    return;
-                }
-
-                $feed = (array) \get_option(Updater::FEED_OPTION, []);
-
-                if ($feed === []) {
-                    \WP_CLI::warning('فیدی ذخیره نشده است.');
-
-                    return;
-                }
-
-                \WP_CLI\Utils\format_items('json', [$feed], array_keys($feed));
-                break;
-
             default:
-                \WP_CLI::error('اکشن نامعتبر. موارد مجاز: inspect|apply|build|backups|rollback|feed');
+                \WP_CLI::error('اکشن نامعتبر. موارد مجاز: inspect|apply|build|backups|rollback');
         }
     }
 
@@ -483,7 +453,7 @@ final class Cli
                 continue;
             }
 
-            $absolute = BERYON_PATH . '/' . $relative;
+            $absolute = BERYON_THEME_PATH . '/' . $relative;
 
             if (is_file($absolute)) {
                 $resolved[] = $relative;
@@ -501,7 +471,7 @@ final class Cli
 
             foreach ($iterator as $file) {
                 if ($file instanceof \SplFileInfo && $file->isFile()) {
-                    $full = str_replace(BERYON_PATH . '/', '', str_replace('\\', '/', $file->getPathname()));
+                    $full = str_replace(BERYON_THEME_PATH . '/', '', str_replace('\\', '/', $file->getPathname()));
 
                     if (! str_contains($full, '/vendor/') && ! str_contains($full, '/node_modules/')) {
                         $resolved[] = $full;
@@ -571,12 +541,12 @@ final class Cli
         $checks = [
             ['PHP ≥ 7.4', version_compare(PHP_VERSION, '7.4.0', '>=')],
             ['WP ≥ 6.0', version_compare(\get_bloginfo('version'), '6.0', '>=')],
-            ['composer autoload', class_exists('\Illuminate\View\Factory') || is_readable(BERYON_PATH . '/vendor/autoload.php')],
-            ['build manifest', is_readable(BERYON_PATH . '/public/assets/manifest.json') || is_readable(BERYON_PATH . '/public/assets/css/app.css')],
-            ['config/catalog.json', is_readable(BERYON_PATH . '/config/catalog.json')],
-            ['config/defaults.json', is_readable(BERYON_PATH . '/config/defaults.json')],
-            ['config/blog.json', is_readable(BERYON_PATH . '/config/blog.json')],
-            ['views/layouts/app.blade.php', is_readable(BERYON_PATH . '/resources/views/layouts/app.blade.php')],
+            ['composer autoload', class_exists('\Illuminate\View\Factory') || is_readable(BERYON_THEME_PATH . '/vendor/autoload.php')],
+            ['build manifest', is_readable(BERYON_THEME_PATH . '/public/assets/manifest.json') || is_readable(BERYON_THEME_PATH . '/public/assets/css/app.css')],
+            ['config/catalog.json', is_readable(BERYON_THEME_PATH . '/config/catalog.json')],
+            ['config/defaults.json', is_readable(BERYON_THEME_PATH . '/config/defaults.json')],
+            ['config/blog.json', is_readable(BERYON_THEME_PATH . '/config/blog.json')],
+            ['views/layouts/app.blade.php', is_readable(BERYON_THEME_PATH . '/resources/views/layouts/app.blade.php')],
             ['پوشه patches نوشتنی', is_writable(PatchApplier::patches_dir()) || is_writable(dirname(PatchApplier::patches_dir()))],
             ['WooCommerce', class_exists('\WooCommerce')],
             ['بدون تداخل افزونه سئوی سوم‌شخص', ! Seo::plugin_active()],
@@ -593,7 +563,7 @@ final class Cli
         }
 
         \WP_CLI\Utils\format_items('table', $rows, ['check', 'status']);
-        \WP_CLI::line('theme version: ' . BERYON_VERSION . ' / installed: ' . Updater::version());
+        \WP_CLI::line('theme version: ' . BERYON_THEME_VERSION . ' / installed: ' . Updater::version());
     }
 
     /**
@@ -615,7 +585,7 @@ final class Cli
      */
     public function images(array $args = [], array $assoc_args = []): void
     {
-        $dir = BERYON_PATH . '/public/assets/images';
+        $dir = BERYON_THEME_PATH . '/public/assets/images';
 
         if (! empty($assoc_args['list']) || (! empty($assoc_args['regenerate']) === false)) {
             $rows = [];

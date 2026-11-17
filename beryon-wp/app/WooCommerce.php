@@ -123,8 +123,8 @@ final class WooCommerce
     public static function image_sizes(): void
     {
         // ووکامرس اندازه‌های قالب را می‌شناسد؛ فقط بازسازی در صورت نیاز
-        if (\get_option('beryon_woo_sizes_done') !== BERYON_VERSION) {
-            \update_option('beryon_woo_sizes_done', BERYON_VERSION, false);
+        if (\get_option('beryon_woo_sizes_done') !== BERYON_THEME_VERSION) {
+            \update_option('beryon_woo_sizes_done', BERYON_THEME_VERSION, false);
         }
     }
 

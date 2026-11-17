@@ -90,7 +90,7 @@ def fallback_version():
     """نسخه پشتیبانِ سخت‌کد در functions.php (وقتی style.css خوانده نشود)."""
     with io.open(os.path.join(THEME, 'functions.php'), encoding='utf-8') as handle:
         source = handle.read()
-    match = re.search(r"define\('BERYON_VERSION',[^;]*:\s*'([0-9][0-9A-Za-z.\-]*)'\s*\)", source)
+    match = re.search(r"define\('BERYON_(?:THEME_)?VERSION',[^;]*:\s*'([0-9][0-9A-Za-z.\-]*)'\s*\)", source)
     return match.group(1) if match else ''
 
 

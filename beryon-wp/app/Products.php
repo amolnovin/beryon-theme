@@ -487,7 +487,7 @@ final class Products
             return $catalog;
         }
 
-        $file = BERYON_PATH . '/config/catalog.json';
+        $file = BERYON_THEME_PATH . '/config/catalog.json';
         $data = is_readable($file) ? json_decode((string) file_get_contents($file), true) : null;
 
         // tags (اسلاگ → برچسب فارسی) و archive هم در فایل هستند و مصرف‌کننده دارند
@@ -536,7 +536,7 @@ final class Products
 
         // نسخه قالب در کلید: ساختار ردیف‌های کش‌شده بین نسخه‌ها عوض می‌شود و کش
         // نسخه پیشین نباید پس از به‌روزرسانی خوانده شود.
-        $cache_key = 'beryon_products_' . substr(md5(BERYON_VERSION . '|' . Lang::cache_key() . '|' . wp_json_encode($args)), 0, 20);
+        $cache_key = 'beryon_products_' . substr(md5(BERYON_THEME_VERSION . '|' . Lang::cache_key() . '|' . wp_json_encode($args)), 0, 20);
         $cached    = \get_transient($cache_key);
 
         if (is_array($cached)) {
@@ -796,7 +796,7 @@ final class Products
      */
     public static function categories(string $exclude = ''): array
     {
-        $cache_key = 'beryon_cats_' . md5(BERYON_VERSION . '|' . Lang::cache_key() . '|' . $exclude);
+        $cache_key = 'beryon_cats_' . md5(BERYON_THEME_VERSION . '|' . Lang::cache_key() . '|' . $exclude);
 
         if (isset(self::$memo[$cache_key])) {
             return self::$memo[$cache_key];
@@ -884,7 +884,7 @@ final class Products
     public static function main_categories(): array
     {
         $override  = trim((string) Settings::opt('products.main_parent', ''));
-        $cache_key = 'beryon_cats_main_' . md5(BERYON_VERSION . '|' . Lang::cache_key() . '|' . $override);
+        $cache_key = 'beryon_cats_main_' . md5(BERYON_THEME_VERSION . '|' . Lang::cache_key() . '|' . $override);
 
         if (isset(self::$memo[$cache_key])) {
             return self::$memo[$cache_key];

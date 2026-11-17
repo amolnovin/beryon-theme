@@ -104,3 +104,120 @@ img.is-loaded{animation:beryon-fade .45s ease both}
 [dir="ltr"] .cat-card .go svg,[dir="ltr"] .product-card .more svg,[dir="ltr"] .blog-card .more svg,[dir="ltr"] .breadcrumb svg{transform:none}
 [dir="ltr"] .product-card:hover .more svg{transform:translateX(5px)}
 [dir="ltr"] .catalog-list li:hover{transform:translateX(6px)}
+
+/* ---------- ک) کارت نقشه برگه تماس با زمینه گوگل‌مپ یا نشان (۱.۰.۶) ----------
+   کارت ساده قالب HTML (‎.map-card‎) دست نمی‌خورد؛ این‌جا فقط حالت «نقشه زنده» است:
+   iframe نقشه کل کارت را پر می‌کند و پیوند «مشاهده موقعیت» روی آن می‌نشیند. */
+.map-card.map-card--live{display:block;padding:0;height:320px;background:#e9eef3;text-align:start}
+.map-card--live .map-frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.map-card--live .map-cta{position:absolute;inset-inline:12px;bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;padding:9px 16px;border-radius:14px;background:rgba(255,255,255,.95);box-shadow:0 8px 24px rgba(24,26,30,.18);font-size:.84rem;font-weight:700;color:var(--ink-2);transition:all var(--trans)}
+.map-card--live .map-cta:hover{color:var(--brand);transform:translateY(-2px)}
+.map-card--live .map-cta .pin{width:34px;height:34px;margin:0;animation:none;flex:none}
+.map-card--live .map-cta .pin svg{width:17px;height:17px}
+@media (prefers-reduced-motion:reduce){.map-card--live .map-cta:hover{transform:none}}
+
+/* ---------- ل) پنجره (مودال) عمومی + کاتالوگ آنلاین (۱.۰.۶) ----------
+   پنهان‌سازی با visibility/opacity است، نه display:none: محتوای پنجره (فلیپ‌بوک
+   DearFlip) باید هنگام بارگذاری صفحه اندازه واقعی داشته باشد تا درست ساخته شود. */
+.bmodal{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:16px;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .25s ease,visibility 0s linear .25s}
+.bmodal.open{visibility:visible;opacity:1;pointer-events:auto;transition:opacity .25s ease}
+.bmodal-backdrop{position:absolute;inset:0;background:rgba(18,20,24,.72)}
+.bmodal-panel{position:relative;width:min(1180px,100%);height:min(92vh,860px);background:#fff;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;transform:translateY(14px) scale(.985);transition:transform .25s ease}
+.bmodal.open .bmodal-panel{transform:none}
+.bmodal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);flex:none}
+.bmodal-head h2{font-size:1rem;margin:0;color:var(--ink)}
+.bmodal-close{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink-2);display:grid;place-items:center;cursor:pointer;transition:all var(--trans);flex:none}
+.bmodal-close:hover{background:var(--brand);border-color:var(--brand);color:#fff}
+.bmodal-close svg{width:18px;height:18px}
+.bmodal-body{flex:1;min-height:0;overflow:auto;background:#f4f5f7;position:relative}
+.bmodal--book .bmodal-body>*{max-width:100%}
+.bmodal-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+body.bmodal-lock{overflow:hidden}
+@media (max-width:640px){
+  .bmodal{padding:0}
+  .bmodal-panel{width:100%;height:100%;border-radius:0}
+}
+@media (prefers-reduced-motion:reduce){.bmodal,.bmodal-panel{transition:none}}
+.admin-hint{margin-top:14px;padding:10px 14px;border:1px dashed var(--brand);border-radius:12px;background:var(--brand-soft);color:var(--brand-2);font-size:.8rem;line-height:1.9}
+.admin-hint code{background:#fff;padding:1px 6px;border-radius:6px}
+
+/* ---------- م) چارت سازمانی درختی با خط‌های رابط (۱.۰.۶) ----------
+   روی همان مارک‌آپ ‎.org-tree / .org-node‎ قالب HTML می‌نشیند (کلاس org-chart)؛
+   ریشه تیره، خانه‌های سفید با حاشیه نازک، و خط افقی‌ای که از مرکز نخستین تا مرکز
+   آخرین فرزند کشیده می‌شود. سه اندازه: عادی (≥۱۲۸۰)، فشرده (۱۱۰۰ تا ۱۲۷۹) و درخت
+   عمودی (≤۱۰۹۹). اگر درخت باز هم از پهنای صفحه بیشتر شد، خودِ چارت افقی پیمایش می‌شود. */
+.org-tree.org-chart{--org-line:#cdd4dc;--org-gap:22px;--org-pad:2px;padding:8px 0 22px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.org-chart ul{display:flex;flex-wrap:nowrap;justify-content:center;gap:0;position:relative;margin:0;padding:var(--org-gap) 0 0;list-style:none}
+.org-chart>ul{width:max-content;min-width:100%;padding-top:0}
+.org-chart li{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;position:relative;padding:var(--org-gap) var(--org-pad) 0}
+.org-chart>ul>li{padding-top:0}
+.org-chart li::before,.org-chart li::after{content:"";position:absolute;top:0;inset-inline-start:auto;inset-inline-end:50%;width:50%;height:var(--org-gap);border-top:1px solid var(--org-line);background:none;transform:none}
+.org-chart li::after{inset-inline-end:auto;inset-inline-start:50%;border-inline-start:1px solid var(--org-line)}
+.org-chart li:only-child::before,.org-chart li:only-child::after{display:none}
+.org-chart li:only-child{padding-top:0}
+.org-chart li:first-child::before,.org-chart li:last-child::after{border:0 none}
+.org-chart li:last-child::before{border-inline-end:1px solid var(--org-line);border-start-end-radius:7px}
+.org-chart li:first-child::after{border-start-start-radius:7px}
+.org-chart li>ul::before{content:"";position:absolute;top:0;inset-inline-start:50%;width:0;height:var(--org-gap);border-inline-start:1px solid var(--org-line);background:none;transform:none}
+.org-chart>ul>li::before,.org-chart>ul>li::after{display:none}
+.org-chart .org-node{position:relative;display:block;text-align:center;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:7px 11px;font-weight:700;font-size:.79rem;line-height:1.75;color:#334155;box-shadow:0 1px 2px rgba(15,23,42,.05);white-space:normal;max-width:108px;transition:border-color var(--trans),box-shadow var(--trans),transform var(--trans)}
+.org-chart .org-node:hover{border-color:#94a3b8;color:#1a202c;transform:translateY(-2px);box-shadow:0 8px 18px rgba(15,23,42,.1)}
+.org-chart .org-node.mgr{background:#fff;color:#334155;border-color:#e2e8f0}
+.org-chart .org-node.root{background:#1a202c;border-color:#1a202c;color:#fff;font-size:.95rem;font-weight:800;padding:11px 38px;max-width:none;white-space:nowrap;border-radius:9px;box-shadow:0 10px 24px rgba(26,32,44,.25)}
+.org-chart .org-node.root:hover{color:#fff;border-color:#1a202c}
+.org-chart .org-node small{display:block;font-weight:600;font-size:.72rem;color:#64748b}
+.org-chart .org-node.root small{color:rgba(255,255,255,.8)}
+@media (max-width:1279px){
+  .org-tree.org-chart{--org-gap:18px;--org-pad:2px}
+  .org-chart .org-node{padding:6px 7px;font-size:.72rem;max-width:92px;border-radius:7px}
+  .org-chart .org-node.root{font-size:.88rem;padding:9px 30px}
+}
+@media (max-width:1099px){
+  .org-tree.org-chart{--org-gap:12px;overflow:visible;max-width:560px;margin-inline:auto}
+  .org-chart ul,.org-chart>ul{display:block;width:auto;min-width:0;padding:0}
+  .org-chart li{display:block;padding:var(--org-gap) 0 0;padding-inline-start:28px}
+  .org-chart>ul>li{padding:0}
+  .org-chart li:only-child{padding-top:var(--org-gap)}
+  .org-chart .org-node,.org-chart .org-node.root{display:inline-block;max-width:none;padding:8px 14px;font-size:.84rem}
+  .org-chart .org-node.root{padding:10px 26px;font-size:.95rem}
+  .org-chart li::before,.org-chart li:first-child::before,.org-chart li:only-child::before{display:block;top:0;bottom:0;inset-inline-start:11px;inset-inline-end:auto;width:0;height:auto;border:0 none;border-inline-start:1px solid var(--org-line);border-radius:0}
+  .org-chart li::after,.org-chart li:last-child::after,.org-chart li:only-child::after{display:block;top:calc(var(--org-gap) + 20px);inset-inline-start:11px;inset-inline-end:auto;width:17px;height:0;border:0 none;border-top:1px solid var(--org-line);border-radius:0}
+  .org-chart li:last-child::before{bottom:auto;height:calc(var(--org-gap) + 20px)}
+  .org-chart li>ul::before{display:none}
+  .org-chart>ul>li::before,.org-chart>ul>li::after,.org-chart>ul>li:only-child::before,.org-chart>ul>li:only-child::after{display:none}
+  .org-chart .org-node,.org-chart .org-node.root{text-align:start}
+}
+@media (prefers-reduced-motion:reduce){.org-chart .org-node:hover{transform:none}}
+
+/* ---------- ن) برگه‌های افزونه «سیستم نمایندگان فروش بریان» (۱.۰.۶) ----------
+   ‎.plugin-form‎  : فرم افزونه در برگه‌های «اعطای نمایندگی» و «نظرات و شکایات»
+   ‎.agents-shell‎ : برگه پنل نماینده و پنل مدیریت (نماهای page-agent-panel و page-agents-admin)
+   ظاهر خودِ پنل‌ها و فرم را CSS افزونه می‌سازد؛ این‌جا فقط جای‌گیری در قالب است. */
+.page-hero.page-hero--slim{padding:26px 0 30px}
+.page-hero--slim .breadcrumb{margin-bottom:0}
+.page-hero--slim h1{margin-top:14px;font-size:clamp(1.3rem,3vw,1.9rem)}
+.agents-shell{padding-top:34px}
+.agents-shell .container{width:min(1360px,94%)}
+.plugin-form{max-width:980px;margin-inline:auto}
+.plugin-form--feedback{max-width:none;margin-inline:0}
+.plugin-form .beryon-panel,.agents-shell .beryon-panel{max-width:100%}
+.agents-login-note{max-width:980px;margin:22px auto 0;text-align:center;font-size:.9rem;color:var(--muted)}
+.agents-login-note a{color:var(--brand);font-weight:800}
+.agents-login-note a:hover{text-decoration:underline}
+.agents-notice,.agents-shell .beryon-notice,.plugin-form .beryon-notice{max-width:620px;margin:24px auto;padding:34px 28px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);text-align:center}
+.agents-notice .ic{width:60px;height:60px;border-radius:18px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;margin:0 auto 14px}
+.agents-notice .ic svg{width:28px;height:28px}
+.agents-notice h2{font-size:1.15rem;margin-bottom:10px}
+.agents-notice p{color:var(--muted);font-size:.92rem}
+.agents-notice a{color:var(--brand);font-weight:700}
+.agents-notice .admin-hint{text-align:start}
+/* اعلان‌های «وارد شوید / دسترسی ندارید» افزونه بدون CSS خودش چاپ می‌شوند (افزونه CSS را
+   فقط همراه پنل بار می‌کند)؛ این چند قاعده همان ظاهر کارت قالب را به آن‌ها می‌دهد. */
+.agents-shell .beryon-notice__icon,.plugin-form .beryon-notice__icon{font-size:2rem;line-height:1;margin-bottom:12px}
+.agents-shell .beryon-notice p,.plugin-form .beryon-notice p{color:var(--ink-2);font-size:.95rem;margin-bottom:16px}
+.agents-shell .beryon-notice .bn-btn,.plugin-form .beryon-notice .bn-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 26px;border-radius:999px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;font-weight:800;font-size:.9rem}
+/* فرم عمومی افزونه در برگه‌های سایت رنگ برند قالب را می‌گیرد (توکن‌های ‎--bn-*‎ خودِ افزونه)؛
+   پنل نماینده و پنل مدیریت ظاهر خودِ افزونه را نگه می‌دارند. */
+.plugin-form .beryon-panel{--bn-brand:var(--brand);--bn-brand-2:var(--brand-2);--bn-brand-soft:var(--brand-soft);--bn-glow:0 8px 24px rgba(213,35,44,.28);margin-block:0}
+/* اعلان‌های شناور افزونه بالاتر از دکمه «بازگشت به بالا»ی قالب بنشینند. */
+body .bn-toast{inset-block-end:92px}

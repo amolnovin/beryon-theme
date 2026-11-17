@@ -42,7 +42,7 @@ final class Acorn
             return (string) \Roots\view($view, $data)->render();
         }
 
-        MiniBlade::addPath(BERYON_PATH . '/resources/views');
+        MiniBlade::addPath(BERYON_THEME_PATH . '/resources/views');
 
         return MiniBlade::render($view, $data);
     }
@@ -60,7 +60,7 @@ final class Acorn
             return (string) \Roots\view($view, $data)->render();
         }
 
-        MiniBlade::addPath(BERYON_PATH . '/resources/views');
+        MiniBlade::addPath(BERYON_THEME_PATH . '/resources/views');
 
         return MiniBlade::renderWithLayout($view, $data);
     }
@@ -94,7 +94,7 @@ final class Acorn
         MiniBlade::flushState();
         MiniBlade::clearCache();
 
-        $cache = BERYON_PATH . '/storage/framework/views';
+        $cache = BERYON_THEME_PATH . '/storage/framework/views';
 
         if (is_dir($cache)) {
             foreach ((array) glob($cache . '/*.php') as $file) {

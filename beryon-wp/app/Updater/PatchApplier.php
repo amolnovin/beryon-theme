@@ -61,7 +61,7 @@ final class PatchApplier
      */
     public static function root(): string
     {
-        return rtrim(BERYON_PATH, '/');
+        return rtrim(BERYON_THEME_PATH, '/');
     }
 
     /**
@@ -204,7 +204,7 @@ final class PatchApplier
 
         $min_theme = (string) ($requires['theme_min'] ?? '');
 
-        if ($min_theme !== '' && version_compare(BERYON_VERSION, $min_theme, '<')) {
+        if ($min_theme !== '' && version_compare(BERYON_THEME_VERSION, $min_theme, '<')) {
             return self::fail('theme_min', sprintf(\__('ابتدا قالب را به نسخه %s ارتقا دهید.', BERYON_TD), $min_theme));
         }
 
@@ -405,7 +405,7 @@ final class PatchApplier
 
         self::cleanup_staging();
 
-        $result['version'] = $result['ok'] ? (string) ($manifest['version'] ?? '') : BERYON_VERSION;
+        $result['version'] = $result['ok'] ? (string) ($manifest['version'] ?? '') : BERYON_THEME_VERSION;
         $result['backup']  = $backup;
         $result['plan']    = $plan;
 
@@ -689,7 +689,7 @@ final class PatchApplier
      */
     public static function post_apply(array $manifest): void
     {
-        $version = (string) ($manifest['version'] ?? BERYON_VERSION);
+        $version = (string) ($manifest['version'] ?? BERYON_THEME_VERSION);
 
         // نام کامل: داخل فضای نام App\Updater نام کوتاه «Updater» به کلاس ناموجود
         // App\Updater\Updater تفسیر می‌شد و اعمال Patch پس از جایگزینی فایل‌ها با
@@ -744,7 +744,7 @@ final class PatchApplier
             return self::fail('zip_missing', \__('برای پشتیبان‌گیری به افزونه Zip نیاز است.', BERYON_TD));
         }
 
-        $name = sprintf('beryon-backup-%s-to-%s-%s.zip', BERYON_VERSION, (string) ($manifest['version'] ?? 'patch'), \gmdate('Ymd-His'));
+        $name = sprintf('beryon-backup-%s-to-%s-%s.zip', BERYON_THEME_VERSION, (string) ($manifest['version'] ?? 'patch'), \gmdate('Ymd-His'));
         $file = self::backups_dir() . '/' . $name;
 
         $zip = new \ZipArchive();
@@ -758,7 +758,7 @@ final class PatchApplier
             (string) wp_json_encode(
                 [
                     'created'     => time(),
-                    'from_version' => BERYON_VERSION,
+                    'from_version' => BERYON_THEME_VERSION,
                     'to_version'  => (string) ($manifest['version'] ?? ''),
                     'patch_id'    => (string) ($manifest['id'] ?? ''),
                     'paths'       => (array) ($plan['paths'] ?? []),

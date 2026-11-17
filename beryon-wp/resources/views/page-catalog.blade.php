@@ -4,19 +4,31 @@
   صفحه کاتالوگ — مارک‌آپ دقیقاً مطابق catalog.html قالب HTML نهایی.
   فهرست دسته‌ها با شمارش واقعی محصولات از دیتابیس خوانده می‌شود و متن
   «چیزی حدود {count} محصول در ۵ گروه» از طریق توکن {count} پر می‌شود.
+  از ۱.۰.۶: لینک دکمه PDF از تنظیمات می‌آید و «مشاهده آنلاین کاتالوگ» کاتالوگ را
+  (شورت‌کد DearFlip) در یک پنجره روی همین صفحه باز می‌کند.
 --}}
 @extends('layouts.app')
 
 @section('content')
 @php
+  // دکمه «نسخه PDF»: لینک مستقیم (catalog.pdf_url) یا فایل انتخاب‌شده از کتابخانه رسانه.
   $pdf_id  = (int) beryon_opt('catalog.pdf_id', 0);
-  $pdf_url = (string) beryon_opt('catalog.pdf_url', '');
+  $pdf_url = trim((string) beryon_opt_raw('catalog.pdf_url', ''));
 
   if ($pdf_url === '' && $pdf_id > 0) {
       $pdf_url = (string) wp_get_attachment_url($pdf_id);
   }
 
-  $flipbook = (string) beryon_opt('catalog.flipbook_url', '');
+  // دکمه «مشاهده آنلاین کاتالوگ»: کاتالوگ در یک پنجره (مودال) روی همین صفحه باز می‌شود.
+  // ۱) شورت‌کد DearFlip (catalog.flipbook_shortcode) اگر افزونه‌اش فعال است؛
+  // ۲) وگرنه «آدرس نسخه آنلاین» در زبانه تازه؛ ۳) وگرنه همان PDF در پنجره؛
+  // ۴) وگرنه صفحه محصولات (رفتار پیشین).
+  $flipbook       = trim((string) beryon_opt_raw('catalog.flipbook_url', ''));
+  $book_shortcode = trim((string) beryon_opt_raw('catalog.flipbook_shortcode', ''));
+  $book_ready     = $book_shortcode !== '' && beryon_shortcode_ready($book_shortcode);
+  $book_html      = $book_ready ? (string) do_shortcode($book_shortcode) : '';
+  $book_mode      = $book_html !== '' ? 'shortcode' : ($flipbook !== '' ? 'link' : ($pdf_url !== '' ? 'pdf' : 'products'));
+  $book_modal     = $book_mode === 'shortcode' || $book_mode === 'pdf';
 @endphp
   <section class="page-hero">
     <div class="container">
@@ -51,7 +63,7 @@
           </ul>
           <div class="hero-actions">
 @if ($pdf_url !== '')
-            <a class="btn btn-primary" href="{{ esc_url($pdf_url) }}" download title="{{ beryon_opt('catalog.download_label') }}">
+            <a class="btn btn-primary" href="{{ esc_url($pdf_url) }}" target="_blank" rel="noopener" download title="{{ beryon_opt('catalog.download_label') }}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
               {{ beryon_opt('catalog.download_label') }}
             </a>
@@ -61,8 +73,17 @@
               {{ beryon_opt('catalog.download_pending') }}
             </a>
 @endif
-            <a class="btn btn-ghost" href="{{ esc_url($flipbook !== '' ? $flipbook : beryon_products_url()) }}">{{ beryon_opt('catalog.online_label') }}</a>
+@if ($book_modal)
+            <button class="btn btn-ghost" type="button" data-modal-open="catalog-book" aria-haspopup="dialog" aria-controls="catalog-book">{{ beryon_opt('catalog.online_label') }}</button>
+@elseif ($book_mode === 'link')
+            <a class="btn btn-ghost" href="{{ esc_url($flipbook) }}" target="_blank" rel="noopener">{{ beryon_opt('catalog.online_label') }}</a>
+@else
+            <a class="btn btn-ghost" href="{{ esc_url(beryon_products_url()) }}">{{ beryon_opt('catalog.online_label') }}</a>
+@endif
           </div>
+@if ($book_shortcode !== '' && ! $book_ready && current_user_can('manage_options'))
+          <p class="admin-hint" role="note">فقط مدیر سایت این را می‌بیند: شورت‌کد کاتالوگ آنلاین (<code dir="ltr">{{ $book_shortcode }}</code>) قابل اجرا نیست، چون افزونه آن (DearFlip) فعال نیست. تا فعال شدن افزونه، دکمه «{{ beryon_opt('catalog.online_label') }}» {{ $book_mode === 'pdf' ? 'فایل PDF را در پنجره نشان می‌دهد' : ($book_mode === 'link' ? 'نشانی نسخه آنلاین را باز می‌کند' : 'به صفحه محصولات می‌رود') }}.</p>
+@endif
         </div>
       </div>
 
@@ -75,4 +96,25 @@
       </div>
     </div>
   </section>
+
+@if ($book_modal)
+  {{-- پنجره کاتالوگ آنلاین. با visibility پنهان می‌شود (نه display:none) تا فلیپ‌بوک هنگام
+       بارگذاری صفحه اندازه واقعی داشته باشد و درست ساخته شود. --}}
+  <div class="bmodal bmodal--book" id="catalog-book" role="dialog" aria-modal="true" aria-labelledby="catalog-book-title" aria-hidden="true" data-modal>
+    <div class="bmodal-backdrop" data-modal-close></div>
+    <div class="bmodal-panel">
+      <div class="bmodal-head">
+        <h2 id="catalog-book-title">{{ beryon_opt('catalog.modal_title') }}</h2>
+        <button class="bmodal-close" type="button" data-modal-close aria-label="بستن پنجره"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="bmodal-body">
+@if ($book_mode === 'shortcode')
+        {!! $book_html !!}
+@else
+        <iframe class="bmodal-frame" title="{{ beryon_opt('catalog.modal_title') }}" data-src="{{ esc_url($pdf_url) }}" loading="lazy"></iframe>
+@endif
+      </div>
+    </div>
+  </div>
+@endif
 @endsection

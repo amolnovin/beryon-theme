@@ -33,13 +33,13 @@ final class Updater
     /** Option تاریخچه نسخه‌ها */
     public const HISTORY_OPTION = 'beryon_theme_versions';
 
-    /** Option نتیجه آخرین بررسی راه دور */
+    /** Option نتیجه آخرین بررسی راه دور (تا ۱.۰.۵؛ فقط برای پاک‌سازی نگه داشته شده) */
     public const FEED_OPTION = 'beryon_update_feed';
 
     /** نام فایل لاگ */
     public const LOG_FILE = 'patch-log.jsonl';
 
-    /** هوک cron */
+    /** هوک cron بررسی راه دور (تا ۱.۰.۵؛ فقط برای پاک‌سازی نگه داشته شده) */
     public const CRON_HOOK = 'beryon_update_check';
 
     /**
@@ -49,12 +49,10 @@ final class Updater
      */
     public static function boot(): void
     {
+        // از ۱.۰.۶ به‌روزرسانی فقط با بارگذاری فایل zip بسته Patch انجام می‌شود؛ بررسی و
+        // دانلود از سرور راه دور (فید JSON، cron و اعلان «به‌روزرسانی موجود است») حذف شده است.
         \add_action('after_switch_theme', [self::class, 'install']);
-        \add_action(self::CRON_HOOK, [self::class, 'check_remote']);
-        \add_action('admin_init', [self::class, 'schedule']);
-        \add_action('admin_notices', [self::class, 'update_notice']);
         \add_action('admin_init', [self::class, 'sync_version_option']);
-        \add_action('wp_ajax_beryon_check_update', [self::class, 'ajax_check']);
         \add_action('wp_ajax_beryon_apply_patch', [self::class, 'ajax_apply']);
         \add_action('wp_ajax_beryon_rollback', [self::class, 'ajax_rollback']);
         \add_action('wp_ajax_beryon_integrity', [self::class, 'ajax_integrity']);
@@ -76,11 +74,11 @@ final class Updater
      */
     public static function sync_version_option(): void
     {
-        if (\get_option(self::VERSION_OPTION, BERYON_VERSION) === BERYON_VERSION) {
+        if (\get_option(self::VERSION_OPTION, BERYON_THEME_VERSION) === BERYON_THEME_VERSION) {
             return;
         }
 
-        \update_option(self::VERSION_OPTION, BERYON_VERSION, false);
+        \update_option(self::VERSION_OPTION, BERYON_THEME_VERSION, false);
 
         // فایل‌های قالب عوض شده‌اند؛ قواعد بازنویسی (مثل سایت‌مپ) در درخواست بعدی
         // با کد تازه از نو ساخته می‌شوند.
@@ -88,7 +86,7 @@ final class Updater
 
         $history   = (array) \get_option(self::HISTORY_OPTION, []);
         $history[] = [
-            'version' => BERYON_VERSION,
+            'version' => BERYON_THEME_VERSION,
             'time'    => time(),
             'note'    => \__('همگام‌سازی خودکار نسخه پس از جایگزینی فایل‌ها', BERYON_TD),
         ];
@@ -104,7 +102,7 @@ final class Updater
     public static function install(): void
     {
         if (\get_option(self::VERSION_OPTION) === false) {
-            \add_option(self::VERSION_OPTION, BERYON_VERSION, '', false);
+            \add_option(self::VERSION_OPTION, BERYON_THEME_VERSION, '', false);
         }
 
         if (\get_option(self::HISTORY_OPTION) === false) {
@@ -112,7 +110,7 @@ final class Updater
                 self::HISTORY_OPTION,
                 [
                     [
-                        'version' => BERYON_VERSION,
+                        'version' => BERYON_THEME_VERSION,
                         'time'    => time(),
                         'note'    => \__('نصب اولیه قالب', BERYON_TD),
                     ],
@@ -152,9 +150,9 @@ final class Updater
      */
     public static function version(): string
     {
-        $version = (string) \get_option(self::VERSION_OPTION, BERYON_VERSION);
+        $version = (string) \get_option(self::VERSION_OPTION, BERYON_THEME_VERSION);
 
-        return $version !== '' ? $version : BERYON_VERSION;
+        return $version !== '' ? $version : BERYON_THEME_VERSION;
     }
 
     /**
@@ -266,227 +264,30 @@ final class Updater
     }
 
     /* ============================================================== *
-     * زمان‌بندی و بررسی راه دور
+     * پاک‌سازی به‌روزرسانی راه دور (حذف‌شده در ۱.۰.۶)
      * ============================================================== */
 
     /**
-     * زمان‌بندی بررسی خودکار.
+     * برچیدن باقی‌مانده‌های «به‌روزرسانی از راه دور» نسخه‌های ≤ ۱.۰.۵.
+     *
+     * رویداد cron بررسی فید، نتیجه ذخیره‌شده آخرین بررسی و اعلان «به‌روزرسانی آماده
+     * نصب» حذف می‌شوند. بسته‌های Patch فقط از راه بارگذاری فایل zip نصب می‌شوند.
      *
      * @return void
      */
-    public static function schedule(): void
+    public static function disable_remote(): void
     {
-        $enabled  = (bool) Settings::opt('updater.auto_check', true);
-        $interval = (string) Settings::opt('updater.check_interval', 'daily');
-        $schedule = in_array($interval, ['hourly', 'twicedaily', 'daily', 'weekly'], true) ? $interval : 'daily';
-
-        if (! $enabled) {
-            if (\wp_next_scheduled(self::CRON_HOOK)) {
-                \wp_clear_scheduled_hook(self::CRON_HOOK);
-            }
-
-            return;
+        if (\wp_next_scheduled(self::CRON_HOOK)) {
+            \wp_clear_scheduled_hook(self::CRON_HOOK);
         }
 
-        if (! \wp_next_scheduled(self::CRON_HOOK)) {
-            \wp_schedule_event(time() + HOUR_IN_SECONDS, $schedule, self::CRON_HOOK);
-        }
-    }
-
-    /**
-     * بررسی فید راه دور برای Patch جدید.
-     *
-     * @return array<string,mixed>
-     */
-    public static function check_remote(): array
-    {
-        $feed = trim((string) Settings::opt('updater.feed_url', ''));
-
-        if ($feed === '' || ! (bool) Settings::opt('updater.allow_remote', false)) {
-            return ['ok' => false, 'code' => 'no_feed', 'message' => \__('آدرس فید به‌روزرسانی تنظیم نشده است.', BERYON_TD)];
-        }
-
-        if (! \wp_http_validate_url($feed)) {
-            return ['ok' => false, 'code' => 'bad_url', 'message' => \__('آدرس فید معتبر نیست.', BERYON_TD)];
-        }
-
-        $response = \wp_safe_remote_get(
-            $feed,
-            [
-                'timeout'     => 20,
-                'redirection' => 2,
-                'headers'     => ['Accept' => 'application/json'],
-                'user-agent'  => 'BeryonTheme/' . self::version(),
-            ]
-        );
-
-        if (\is_wp_error($response)) {
-            return ['ok' => false, 'code' => 'http', 'message' => $response->get_error_message()];
-        }
-
-        $status = (int) \wp_remote_retrieve_response_code($response);
-
-        if ($status !== 200) {
-            return ['ok' => false, 'code' => 'http_' . $status, 'message' => sprintf(\__('پاسخ سرور: %d', BERYON_TD), $status)];
-        }
-
-        $body = (string) \wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
-
-        if (! is_array($data) || empty($data['version']) || empty($data['url'])) {
-            return ['ok' => false, 'code' => 'bad_json', 'message' => \__('پاسخ فید معتبر نیست.', BERYON_TD)];
-        }
-
-        $current  = self::version();
-        $latest   = (string) $data['version'];
-        $has_new  = version_compare($latest, $current, '>');
-        $expected = strtolower((string) ($data['sha256'] ?? ''));
-
-        $result = [
-            'ok'           => true,
-            'current'      => $current,
-            'latest'       => $latest,
-            'available'    => $has_new,
-            'url'          => esc_url_raw((string) $data['url']),
-            'label'        => (string) ($data['label'] ?? ''),
-            'notes'        => (string) ($data['notes'] ?? ''),
-            'requires'     => (array) ($data['requires'] ?? []),
-            'sha256'       => $expected,
-            'channel'      => (string) ($data['channel'] ?? 'stable'),
-            'checked_at'   => time(),
-            'auto_install' => (bool) ($data['auto_install'] ?? false),
-        ];
-
-        \update_option(self::FEED_OPTION, $result, false);
-
-        self::log(['ok' => true, 'action' => 'check', 'version' => $latest, 'message' => $has_new ? \__('به‌روزرسانی موجود است', BERYON_TD) : \__('قالب به‌روز است', BERYON_TD)]);
-
-        if ($has_new && $result['auto_install'] && \current_user_can('manage_options')) {
-            return $result;
-        }
-
-        return $result;
-    }
-
-    /**
-     * دانلود بسته Patch از آدرس (با تأیید hash).
-     *
-     * @param string $url      آدرس
-     * @param string $expected hash sha256 مورد انتظار
-     * @return array<string,mixed>
-     */
-    public static function download(string $url, string $expected = ''): array
-    {
-        if (! \wp_http_validate_url($url)) {
-            return ['ok' => false, 'code' => 'bad_url', 'message' => \__('آدرس دانلود معتبر نیست.', BERYON_TD)];
-        }
-
-        $tmp = \wp_tempnam('beryon-patch-', sys_get_temp_dir());
-
-        if (! is_string($tmp) || $tmp === '') {
-            return ['ok' => false, 'code' => 'tmp', 'message' => \__('ساخت فایل موقت ناموفق بود.', BERYON_TD)];
-        }
-
-        $response = \wp_safe_remote_get(
-            $url,
-            [
-                'timeout'   => 120,
-                'stream'    => true,
-                'filename'  => $tmp,
-                'user-agent' => 'BeryonTheme/' . self::version(),
-            ]
-        );
-
-        if (\is_wp_error($response)) {
-            @unlink($tmp); // phpcs:ignore WordPress.PHP.NoSilencedErrors
-
-            return ['ok' => false, 'code' => 'download', 'message' => $response->get_error_message()];
-        }
-
-        if ($expected !== '' && ! hash_equals(strtolower($expected), (string) hash_file('sha256', $tmp))) {
-            @unlink($tmp); // phpcs:ignore WordPress.PHP.NoSilencedErrors
-
-            return ['ok' => false, 'code' => 'checksum', 'message' => \__('checksum بسته دانلودشده با مقدار اعلامی سرور مطابقت نکرد.', BERYON_TD)];
-        }
-
-        $target = PatchApplier::patches_dir() . '/downloaded-' . \gmdate('Ymd-His') . '.zip';
-
-        if (! rename($tmp, $target)) {
-            @unlink($tmp); // phpcs:ignore WordPress.PHP.NoSilencedErrors
-
-            return ['ok' => false, 'code' => 'move', 'message' => \__('انتقال فایل به پوشه Patch ناموفق بود.', BERYON_TD)];
-        }
-
-        return ['ok' => true, 'file' => $target, 'sha256' => (string) hash_file('sha256', $target)];
-    }
-
-    /**
-     * هشدار وجود به‌روزرسانی در پیشخوان.
-     *
-     * @return void
-     */
-    public static function update_notice(): void
-    {
-        if (! \current_user_can('manage_options') || ! (bool) Settings::opt('updater.auto_check', true)) {
-            return;
-        }
-
-        $feed = (array) \get_option(self::FEED_OPTION, []);
-
-        if (empty($feed['available'])) {
-            return;
-        }
-
-        $url = \admin_url('admin.php?page=beryon-updates');
-
-        echo '<div class="notice notice-info"><p dir="rtl">' .
-            sprintf(
-                /* translators: 1: current version, 2: new version */
-                esc_html__('به‌روزرسانی قالب بریون موجود است: %1$s ← %2$s.', BERYON_TD),
-                '<code>' . esc_html(self::version()) . '</code>',
-                '<code>' . esc_html((string) $feed['latest']) . '</code>'
-            ) .
-            ' <a class="button button-small" href="' . esc_url($url) . '">' . esc_html__('بررسی و نصب Patch', BERYON_TD) . '</a></p></div>';
+        \delete_option(self::FEED_OPTION);
+        \delete_transient('beryon_update_pending');
     }
 
     /* ============================================================== *
      * AJAX پنل
      * ============================================================== */
-
-    /**
-     * بررسی به‌روزرسانی (AJAX).
-     *
-     * @return void
-     */
-    public static function ajax_check(): void
-    {
-        self::guard();
-
-        $result = self::check_remote();
-
-        if (! empty($result['ok']) && ! empty($result['url'])) {
-            $download = self::download((string) $result['url'], (string) ($result['sha256'] ?? ''));
-
-            if (! empty($download['ok'])) {
-                $result['downloaded'] = (string) $download['file'];
-                $inspect              = PatchApplier::inspect((string) $download['file']);
-                $result['manifest_ok'] = (bool) ($inspect['ok'] ?? false);
-
-                if (! empty($inspect['manifest'])) {
-                    $result['manifest'] = [
-                        'version' => (string) ($inspect['manifest']['version'] ?? ''),
-                        'label'   => (string) ($inspect['manifest']['label'] ?? ''),
-                        'notes'   => (string) ($inspect['manifest']['notes'] ?? ''),
-                        'files'   => count((array) ($inspect['manifest']['files'] ?? [])),
-                    ];
-                }
-            } else {
-                $result['download_error'] = (string) ($download['message'] ?? '');
-            }
-        }
-
-        \wp_send_json_success($result);
-    }
 
     /**
      * اعمال Patch (AJAX).
@@ -497,56 +298,37 @@ final class Updater
     {
         self::guard();
 
-        $source = isset($_POST['source']) ? \sanitize_key(\wp_unslash($_POST['source'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-        $file   = '';
-
-        if ($source === 'remote') {
-            $feed = (array) \get_option(self::FEED_OPTION, []);
-            $url  = (string) ($feed['url'] ?? '');
-
-            if ($url === '') {
-                \wp_send_json_error(['message' => \__('ابتدا به‌روزرسانی را بررسی کنید.', BERYON_TD)], 400);
-            }
-
-            $download = self::download($url, (string) ($feed['sha256'] ?? ''));
-
-            if (empty($download['ok'])) {
-                \wp_send_json_error(['message' => (string) ($download['message'] ?? '')], 502);
-            }
-
-            $file = (string) $download['file'];
-        } else {
-            if (! isset($_FILES['patch']) || empty($_FILES['patch']['tmp_name'])) { // phpcs:ignore WordPress.Security.NonceVerification
-                \wp_send_json_error(['message' => \__('فایلی ارسال نشد.', BERYON_TD)], 400);
-            }
-
-            // بررسی نوع و اندازه
-            if ((int) ($_FILES['patch']['size'] ?? 0) > (int) Settings::opt('updater.max_patch_size', 52428800)) { // phpcs:ignore WordPress.Security.NonceVerification
-                \wp_send_json_error(['message' => \__('حجم فایل بیش از حد مجاز است.', BERYON_TD)], 413);
-            }
-
-            $file = (string) $_FILES['patch']['tmp_name']; // phpcs:ignore WordPress.Security.NonceVerification, WordPress.Security.ValidatedSanitizedInput
-
-            if (! class_exists('\ZipArchive')) {
-                \wp_send_json_error(['message' => \__('افزونه Zip در PHP فعال نیست.', BERYON_TD)], 500);
-            }
-
-            $zip = new \ZipArchive();
-
-            if ($zip->open($file) !== true) {
-                \wp_send_json_error(['message' => \__('فایل zip معتبر نیست.', BERYON_TD)], 400);
-            }
-
-            // انتقال به پوشه Patch (برای ماندگاری و لاگ)
-            $target = PatchApplier::patches_dir() . '/uploaded-' . \gmdate('Ymd-His') . '.zip';
-            $zip->close();
-
-            if (! \move_uploaded_file($file, $target) && ! \rename($file, $target)) { // phpcs:ignore WordPress.PHP.NoSilencedErrors
-                $target = $file;
-            }
-
-            $file = $target;
+        // فقط فایل بارگذاری‌شده پذیرفته می‌شود (منبع راه دور در ۱.۰.۶ حذف شد).
+        if (! isset($_FILES['patch']) || empty($_FILES['patch']['tmp_name'])) { // phpcs:ignore WordPress.Security.NonceVerification
+            \wp_send_json_error(['message' => \__('فایلی ارسال نشد.', BERYON_TD)], 400);
         }
+
+        // بررسی نوع و اندازه
+        if ((int) ($_FILES['patch']['size'] ?? 0) > (int) Settings::opt('updater.max_patch_size', 52428800)) { // phpcs:ignore WordPress.Security.NonceVerification
+            \wp_send_json_error(['message' => \__('حجم فایل بیش از حد مجاز است.', BERYON_TD)], 413);
+        }
+
+        $file = (string) $_FILES['patch']['tmp_name']; // phpcs:ignore WordPress.Security.NonceVerification, WordPress.Security.ValidatedSanitizedInput
+
+        if (! class_exists('\ZipArchive')) {
+            \wp_send_json_error(['message' => \__('افزونه Zip در PHP فعال نیست.', BERYON_TD)], 500);
+        }
+
+        $zip = new \ZipArchive();
+
+        if ($zip->open($file) !== true) {
+            \wp_send_json_error(['message' => \__('فایل zip معتبر نیست.', BERYON_TD)], 400);
+        }
+
+        // انتقال به پوشه Patch (برای ماندگاری و لاگ)
+        $target = PatchApplier::patches_dir() . '/uploaded-' . \gmdate('Ymd-His') . '.zip';
+        $zip->close();
+
+        if (! \move_uploaded_file($file, $target) && ! \rename($file, $target)) { // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            $target = $file;
+        }
+
+        $file = $target;
 
         $dry = isset($_POST['dry_run']) && (string) $_POST['dry_run'] === '1'; // phpcs:ignore WordPress.Security.NonceVerification
 
@@ -554,7 +336,7 @@ final class Updater
             $file,
             [
                 'dry_run' => $dry,
-                'source'  => $source === 'remote' ? 'remote' : 'upload',
+                'source'  => 'upload',
                 'actor'   => \get_current_user_id(),
             ]
         );
@@ -737,7 +519,7 @@ final class Updater
                 continue;
             }
 
-            $absolute = BERYON_PATH . '/' . $relative;
+            $absolute = BERYON_THEME_PATH . '/' . $relative;
 
             if (! is_file($absolute) || ! is_readable($absolute)) {
                 $errors[] = $relative;
@@ -811,7 +593,7 @@ final class Updater
         $zip->addFromString('README.txt', self::patch_readme($manifest));
 
         foreach ($files as $entry) {
-            $zip->addFile(BERYON_PATH . '/' . $entry['path'], 'files/' . $entry['path']);
+            $zip->addFile(BERYON_THEME_PATH . '/' . $entry['path'], 'files/' . $entry['path']);
         }
 
         $zip->close();
@@ -868,23 +650,13 @@ final class Updater
     }
 
     /**
-     * آیا بررسی زمان‌بندی‌شده فعال است؟
-     *
-     * @return bool
-     */
-    public static function is_scheduled(): bool
-    {
-        return (bool) \wp_next_scheduled(self::CRON_HOOK);
-    }
-
-    /**
      * متن راهنمای ساختار Patch (از فایل docs یا الگوی درون‌خطی).
      *
      * @return string
      */
     public static function docs(): string
     {
-        $file = BERYON_PATH . '/docs/PATCH_SPEC.md';
+        $file = BERYON_THEME_PATH . '/docs/PATCH_SPEC.md';
 
         if (is_readable($file)) {
             return (string) file_get_contents($file);

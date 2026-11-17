@@ -93,7 +93,7 @@ final class Setup
         $editor = Assets::resolve('css/editor.css', 'resources/css/editor.css');
 
         if ($editor['path'] !== '') {
-            \add_editor_style(str_replace(BERYON_PATH . '/', '', $editor['path']));
+            \add_editor_style(str_replace(BERYON_THEME_PATH . '/', '', $editor['path']));
         }
     }
 
@@ -119,7 +119,7 @@ final class Setup
      */
     public static function load_textdomain(): void
     {
-        \load_theme_textdomain(BERYON_TD, BERYON_PATH . '/resources/lang');
+        \load_theme_textdomain(BERYON_TD, BERYON_THEME_PATH . '/resources/lang');
     }
 
     /**
@@ -132,7 +132,7 @@ final class Setup
     {
         $template = preg_replace('/\.php$/', '', (string) $template) ?? $template;
 
-        if (locate_template("views/{$template}.blade.php") !== '' || is_readable(BERYON_PATH . "/resources/views/{$template}.blade.php")) {
+        if (locate_template("views/{$template}.blade.php") !== '' || is_readable(BERYON_THEME_PATH . "/resources/views/{$template}.blade.php")) {
             return "{$template}.blade";
         }
 
@@ -149,15 +149,15 @@ final class Setup
     {
         // اگر وردپرس یک فایل .php معمولی از ریشه قالب انتخاب کرده باشد و
         // معادل Blade آن موجود باشد، Blade اولویت دارد.
-        $relative = str_replace(\trailingslashit(BERYON_PATH), '', $template);
+        $relative = str_replace(\trailingslashit(BERYON_THEME_PATH), '', $template);
         $relative = ltrim(str_replace('\\', '/', $relative), '/');
 
         if ($relative !== '' && str_ends_with($relative, '.php')) {
             $base = basename($relative, '.php');
             $blade = "resources/views/{$base}.blade.php";
 
-            if (is_readable(BERYON_PATH . '/' . $blade) && ! is_readable(BERYON_PATH . '/' . $relative)) {
-                return BERYON_PATH . '/index.php';
+            if (is_readable(BERYON_THEME_PATH . '/' . $blade) && ! is_readable(BERYON_THEME_PATH . '/' . $relative)) {
+                return BERYON_THEME_PATH . '/index.php';
             }
         }
 
@@ -172,7 +172,7 @@ final class Setup
              * @param string $template مسیر قالب انتخاب‌شده
              */
             if ((bool) \apply_filters('beryon/template/hijack', true, $template)) {
-                return BERYON_PATH . '/index.php';
+                return BERYON_THEME_PATH . '/index.php';
             }
         }
 
@@ -187,7 +187,7 @@ final class Setup
      */
     public static function page_templates(array $templates): array
     {
-        $dir = BERYON_PATH . '/resources/views';
+        $dir = BERYON_THEME_PATH . '/resources/views';
 
         foreach ((array) glob($dir . '/page-*.blade.php') as $file) {
             $name = basename((string) $file);

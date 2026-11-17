@@ -49,6 +49,7 @@ final class SettingsPage
         \add_action('admin_post_beryon_reset_options', [self::class, 'reset_options']);
         \add_action('admin_post_beryon_flush_caches', [self::class, 'flush_caches']);
         \add_action('admin_post_beryon_reseed', [self::class, 'reseed']);
+        \add_action('admin_post_beryon_agents_pages', [self::class, 'agents_pages']);
         \add_action('admin_notices', [self::class, 'flash_notice']);
 
         // آپلود پچ از طریق فرم (مسیر جایگزین AJAX برای بسته‌های بزرگ)
@@ -95,11 +96,19 @@ final class SettingsPage
      */
     public static function enqueue(string $hook): void
     {
-        if (strpos($hook, 'beryon') === false) {
+        if (! Assets::is_theme_screen($hook)) {
             return;
         }
 
         Assets::admin_assets($hook);
+
+        // انتخابگر رسانه (لوگو، فایل PDF کاتالوگ) به کتابخانه رسانه وردپرس نیاز دارد؛ تا
+        // ۱.۰.۵ بارگذاری نمی‌شد و دکمه «انتخاب تصویر» کاری نمی‌کرد.
+        $page = isset($_GET['page']) ? (string) \sanitize_key(\wp_unslash($_GET['page'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+        if ($page === self::PAGE_SLUG && \function_exists('wp_enqueue_media')) {
+            \wp_enqueue_media();
+        }
 
         \wp_localize_script(
             'beryon-admin',
@@ -110,13 +119,20 @@ final class SettingsPage
                 'restUrl'   => \esc_url_raw(\rest_url('beryon/v1/')),
                 'restNonce' => \wp_create_nonce('wp_rest'),
                 'uploadUrl' => \esc_url_raw(\wp_nonce_url(\admin_url('admin-post.php?action=beryon_upload_patch'), 'beryon_upload_patch')),
+                'maxPatchSize' => (int) Settings::opt('updater.max_patch_size', 52428800),
                 'strings'   => [
                     'checking'   => \__('در حال بررسی…', BERYON_TD),
                     'applying'   => \__('در حال اعمال پچ…', BERYON_TD),
                     'confirm'    => \__('این عملیات قابل بازگشت است؛ ادامه می‌دهید؟', BERYON_TD),
                     'confirmRb'  => \__('بازگردانی به نسخه پشتیبان، تغییرات بعدی را حذف می‌کند. ادامه؟', BERYON_TD),
-                    'emptyPatch' => \__('ابتدا یک بسته پچ انتخاب کنید.', BERYON_TD),
+                    'emptyPatch' => \__('ابتدا فایل zip بسته به‌روزرسانی را انتخاب کنید.', BERYON_TD),
+                    'notZip'     => \__('فایل انتخاب‌شده zip نیست. بسته به‌روزرسانی قالب یک فایل zip است.', BERYON_TD),
+                    'tooLarge'   => \__('حجم فایل بیش از حد مجاز است.', BERYON_TD),
                     'ok'         => \__('انجام شد', BERYON_TD),
+                    'noImage'    => \__('بدون تصویر', BERYON_TD),
+                    'noFile'     => \__('فایلی انتخاب نشده', BERYON_TD),
+                    'mediaTitle' => \__('انتخاب تصویر', BERYON_TD),
+                    'fileTitle'  => \__('انتخاب فایل', BERYON_TD),
                 ],
             ]
         );
@@ -175,7 +191,7 @@ final class SettingsPage
         }
 
         echo '<div class="notice notice-success is-dismissible"><p><strong>'
-            . esc_html(\sprintf(\__('قالب بریون %s فعال شد.', BERYON_TD), BERYON_VERSION))
+            . esc_html(\sprintf(\__('قالب بریون %s فعال شد.', BERYON_TD), BERYON_THEME_VERSION))
             . '</strong> '
             . esc_html__('برای شروع، متن‌ها و اطلاعات تماس را در تنظیمات قالب بازبینی کنید و در صورت نیاز داده‌های نمونه را درج کنید:', BERYON_TD)
             . ' ' . implode(' | ', $html) // phpcs:ignore WordPress.Security.EscapeOutput -- اجزا پیش‌تر escape شده‌اند
@@ -361,6 +377,10 @@ final class SettingsPage
             case 'url':
                 return (string) $raw === '' ? '' : (string) \esc_url_raw((string) $raw);
 
+            case 'embed':
+                // کد <iframe> یا نشانی جاسازی نقشه: فقط نشانیِ مجازِ همان سرویس ذخیره می‌شود.
+                return \beryon_embed_src((string) $raw, (string) ($field['hosts'] ?? ''));
+
             case 'email':
                 return (string) \sanitize_email((string) $raw);
 
@@ -373,7 +393,7 @@ final class SettingsPage
             case 'html':
                 // مرورگر متن چندخطی را با CRLF می‌فرستد؛ به LF یکدست می‌شود تا مقدار
                 // ذخیره‌شده با هر بار ذخیره تغییر نکند.
-                return (string) \wp_kses_post(str_replace(["\r\n", "\r"], "\n", (string) $raw));
+                return self::plain_phone_text((string) \wp_kses_post(str_replace(["\r\n", "\r"], "\n", (string) $raw)), $field);
 
             case 'tags':
             case 'lines':
@@ -403,8 +423,30 @@ final class SettingsPage
                 return self::sanitize_repeater($raw, $field, (array) $fallback);
 
             default:
-                return (string) \sanitize_text_field((string) $raw);
+                return self::plain_phone_text((string) \sanitize_text_field((string) $raw), $field);
         }
+    }
+
+    /**
+     * شماره تماس بدون خط تیره در متن‌های نمایشی (فیلدهای فنی مثل شورت‌کد و نشانی دست نمی‌خورند).
+     *
+     * @param string              $value مقدار پاک‌سازی‌شده
+     * @param array<string,mixed> $field تعریف فیلد
+     * @return string
+     */
+    private static function plain_phone_text(string $value, array $field): string
+    {
+        $name  = (string) ($field['name'] ?? '');
+        $group = (string) ($field['group'] ?? '');
+
+        if ($value === '' || in_array($group, ['security', 'updater', 'performance'], true)
+            || (string) ($field['dir'] ?? '') === 'ltr'
+            || strpos($value, '://') !== false || strpos($value, 'href=') !== false || strpos($value, 'src=') !== false
+            || preg_match('/(^|_)(url|href|src|link|embed|file|image|photo|icon|slug|shortcode|key|id|pattern|format)$/', $name) === 1) {
+            return $value;
+        }
+
+        return Settings::plain_phone($value);
     }
 
     /**
@@ -584,7 +626,7 @@ final class SettingsPage
         }
 
         echo '<div class="wrap beryon-wrap" dir="rtl">';
-        self::header(__('تنظیمات قالب بریون', BERYON_TD), sprintf('نسخه %s', BERYON_VERSION));
+        self::header(__('تنظیمات قالب بریون', BERYON_TD), sprintf('نسخه %s', BERYON_THEME_VERSION));
         echo '<nav class="beryon-tabs" role="tablist">';
 
         foreach ($schema as $key => $conf) {
@@ -596,14 +638,26 @@ final class SettingsPage
 
         echo '</nav>';
 
+        $current = $schema[$tab];
+
+        // زبانه «به‌روزرسانی»: نصب بسته از فایل zip همین‌جا انجام می‌شود (فرم جدا از فرم
+        // تنظیمات است؛ فرم‌ها تو در تو نمی‌شوند).
+        if ($tab === 'updater') {
+            if (! empty($current['intro'])) {
+                echo '<p class="beryon-intro">' . \wp_kses_post($current['intro']) . '</p>';
+            }
+
+            self::patch_flash();
+            self::patch_upload_card('settings');
+            echo '<h2 class="beryon-subtitle">' . esc_html__('محدودیت‌های ایمنی بسته', BERYON_TD) . '</h2>';
+        }
+
         echo '<form method="post" action="' . esc_url(\admin_url('options.php')) . '" class="beryon-form">';
         \settings_fields(self::GROUP);
 
-        $current = $schema[$tab];
-
         echo '<input type="hidden" name="beryon_tab" value="' . esc_attr($tab) . '">';
 
-        if (! empty($current['intro'])) {
+        if (! empty($current['intro']) && $tab !== 'updater') {
             echo '<p class="beryon-intro">' . \wp_kses_post($current['intro']) . '</p>';
         }
 
@@ -635,14 +689,12 @@ final class SettingsPage
         }
 
         $values  = Settings::all();
-        $feed    = (array) \get_option(Updater::FEED_OPTION, []);
         $history = Updater::history();
         $logs    = Updater::logs(25);
         $backups = PatchApplier::backups();
-        $pending = \get_transient('beryon_update_pending');
 
         echo '<div class="wrap beryon-wrap" dir="rtl">';
-        self::header(\__('به‌روزرسانی قالب با Patch', BERYON_TD), \__('نسخه نصب‌شده: ', BERYON_TD) . BERYON_VERSION);
+        self::header(\__('به‌روزرسانی قالب با Patch', BERYON_TD), \__('نسخه نصب‌شده: ', BERYON_TD) . BERYON_THEME_VERSION);
 
         echo '<nav class="beryon-tabs">';
         echo '<a class="beryon-tab" href="' . esc_url(\admin_url('admin.php?page=' . self::PAGE_SLUG)) . '">' . esc_html__('تنظیمات', BERYON_TD) . '</a>';
@@ -651,13 +703,17 @@ final class SettingsPage
         echo '<a class="beryon-tab" href="' . esc_url(\admin_url('admin.php?page=beryon-tools')) . '">' . esc_html__('ابزارها', BERYON_TD) . '</a>';
         echo '</nav>';
 
+        // --- نتیجه آخرین بارگذاری + فرم نصب بسته (روش اصلی به‌روزرسانی) ---
+        self::patch_flash();
+        self::patch_upload_card('updates');
+
         // --- وضعیت نسخه ---
         echo '<div class="beryon-grid-2">';
         echo '<div class="beryon-card">';
         echo '<h2 class="beryon-card-title">' . esc_html__('وضعیت نسخه', BERYON_TD) . '</h2>';
         echo '<table class="widefat striped beryon-table"><tbody>';
-        echo '<tr><th>' . esc_html__('نسخه فعال', BERYON_TD) . '</th><td><code>' . esc_html(BERYON_VERSION) . '</code></td></tr>';
-        echo '<tr><th>' . esc_html__('مسیر قالب', BERYON_TD) . '</th><td><code>' . esc_html(basename(BERYON_PATH)) . '</code></td></tr>';
+        echo '<tr><th>' . esc_html__('نسخه فعال', BERYON_TD) . '</th><td><code>' . esc_html(BERYON_THEME_VERSION) . '</code></td></tr>';
+        echo '<tr><th>' . esc_html__('مسیر قالب', BERYON_TD) . '</th><td><code>' . esc_html(basename(BERYON_THEME_PATH)) . '</code></td></tr>';
         echo '<tr><th>' . esc_html__('PHP / وردپرس', BERYON_TD) . '</th><td><code>' . esc_html(PHP_VERSION . ' / ' . \get_bloginfo('version')) . '</code></td></tr>';
 
         // وضعیت چندزبانه و دسته‌های اصلیِ همان زبانی که پیشخوان نشان می‌دهد — برای وارسی پس از نصب.
@@ -666,19 +722,18 @@ final class SettingsPage
 
         echo '<tr><th>' . esc_html__('چندزبانه', BERYON_TD) . '</th><td>' . esc_html(\App\Lang::summary()) . '</td></tr>';
         echo '<tr><th>' . esc_html(\__('دسته‌های اصلی', BERYON_TD) . $main_lang) . '</th><td>' . esc_html($main_names !== [] ? implode('، ', $main_names) : '—') . '</td></tr>';
-        echo '<tr><th>' . esc_html__('زمان‌بندی بررسی خودکار', BERYON_TD) . '</th><td>' . (Updater::is_scheduled() ? '<span class="beryon-badge ok">فعال</span>' : '<span class="beryon-badge off">غیرفعال</span>') . '</td></tr>';
+        echo '<tr><th>' . esc_html__('روش به‌روزرسانی', BERYON_TD) . '</th><td>' . esc_html__('بارگذاری فایل zip بسته (Patch) از همین صفحه', BERYON_TD) . '</td></tr>';
         echo '</tbody></table>';
 
         echo '<p class="beryon-actions">';
-        echo '<button type="button" class="button button-primary" data-beryon-action="check-update">' . esc_html__('بررسی به‌روزرسانی', BERYON_TD) . '</button> ';
         echo '<button type="button" class="button" data-beryon-action="integrity">' . esc_html__('بررسی یکپارچگی فایل‌ها', BERYON_TD) . '</button>';
         echo '</p>';
         echo '<div class="beryon-result" data-beryon-result hidden></div>';
         echo '</div>';
 
-        // --- فید راه دور ---
+        // --- محدودیت‌های ایمنی بسته ---
         echo '<div class="beryon-card">';
-        echo '<h2 class="beryon-card-title">' . esc_html__('منبع به‌روزرسانی (فید JSON)', BERYON_TD) . '</h2>';
+        echo '<h2 class="beryon-card-title">' . esc_html__('محدودیت‌های ایمنی بسته', BERYON_TD) . '</h2>';
         echo '<form method="post" action="' . esc_url(\admin_url('options.php')) . '">';
         \settings_fields(self::GROUP);
         echo '<input type="hidden" name="beryon_tab" value="updater">';
@@ -689,61 +744,7 @@ final class SettingsPage
 
         \submit_button(\__('ذخیره تنظیمات به‌روزرسانی', BERYON_TD));
         echo '</form>';
-
-        if (is_array($feed) && $feed !== []) {
-            echo '<table class="widefat striped beryon-table"><tbody>';
-            echo '<tr><th>' . esc_html__('نسخه فید', BERYON_TD) . '</th><td><code>' . esc_html((string) ($feed['version'] ?? '—')) . '</code></td></tr>';
-            echo '<tr><th>' . esc_html__('برچسب', BERYON_TD) . '</th><td>' . esc_html((string) ($feed['label'] ?? '—')) . '</td></tr>';
-            echo '<tr><th>' . esc_html__('کانال', BERYON_TD) . '</th><td>' . esc_html((string) ($feed['channel'] ?? 'stable')) . '</td></tr>';
-            echo '</tbody></table>';
-        }
-
         echo '</div></div>';
-
-        // --- آپلود پچ ---
-        echo '<div class="beryon-card">';
-        echo '<h2 class="beryon-card-title">' . esc_html__('نصب بسته به‌روزرسانی (Patch)', BERYON_TD) . '</h2>';
-        echo '<p class="beryon-intro">' . \wp_kses_post(
-            \__('بسته پچ یک فایل <code>zip</code> است که در ریشه آن <code>patch.json</code> و پوشه <code>files/</code> قرار دارد. پیش از اعمال، از فایل‌های دست‌خورده پشتیبان ساخته می‌شود و در صورت خطا، بازگردانی خودکار انجام می‌گیرد. ساختار کامل در <code>docs/PATCH_SPEC.md</code> مستند شده است.', BERYON_TD)
-        ) . '</p>';
-
-        echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(\wp_nonce_url(\admin_url('admin-post.php?action=beryon_upload_patch'), 'beryon_upload_patch')) . '">';
-        echo '<table class="form-table"><tbody>';
-        echo '<tr><th scope="row"><label for="beryon-patch-file">' . esc_html__('فایل پچ', BERYON_TD) . '</label></th><td>'
-            . '<input type="file" name="patch" id="beryon-patch-file" accept=".zip,application/zip" class="regular-text">'
-            . '<p class="description">' . esc_html(\sprintf(__('حداکثر اندازه: %s', BERYON_TD), size_format((int) Settings::opt('updater.max_patch_size', 52428800)))) . '</p></td></tr>';
-        echo '<tr><th scope="row">' . esc_html__('حالت آزمایشی', BERYON_TD) . '</th><td><label><input type="checkbox" name="dry_run" value="1"> '
-            . esc_html__('فقط اعتبارسنجی و نمایش برنامه تغییرات (هیچ فایلی نوشته نمی‌شود)', BERYON_TD) . '</label></td></tr>';
-        echo '</tbody></table>';
-        \submit_button(\__('بررسی و اعمال پچ', BERYON_TD), 'primary', 'beryon_apply', true);
-        echo '</form>';
-        echo '</div>';
-
-        // --- پیام‌های نتیجه ---
-        $flash = \get_transient('beryon_patch_flash_' . \get_current_user_id());
-
-        if (is_array($flash)) {
-            \delete_transient('beryon_patch_flash_' . \get_current_user_id());
-            $type = (string) ($flash['type'] ?? 'success');
-            echo '<div class="notice notice-' . esc_attr($type) . ' is-dismissible"><p><strong>' . esc_html((string) ($flash['title'] ?? '')) . '</strong><br>' . \wp_kses_post((string) ($flash['message'] ?? '')) . '</p>';
-
-            if (! empty($flash['plan']) && is_array($flash['plan'])) {
-                echo '<ul class="beryon-plan">';
-
-                foreach ($flash['plan'] as $row) {
-                    echo '<li><code>' . esc_html((string) ($row['op'] ?? '')) . '</code> ' . esc_html((string) ($row['path'] ?? '')) . '</li>';
-                }
-
-                echo '</ul>';
-            }
-
-            echo '</div>';
-        }
-
-        if (is_array($pending) && $pending !== []) {
-            echo '<div class="notice notice-warning"><p><strong>' . esc_html__('یک به‌روزرسانی آماده نصب است', BERYON_TD) . '</strong><br>'
-                . esc_html((string) ($pending['version'] ?? '')) . ' — ' . esc_html((string) ($pending['label'] ?? '')) . '</p></div>';
-        }
 
         // --- پشتیبان‌ها ---
         echo '<div class="beryon-grid-2">';
@@ -840,6 +841,82 @@ final class SettingsPage
     }
 
     /**
+     * کارت «نصب بسته به‌روزرسانی از فایل zip» (مشترک میان زبانه «به‌روزرسانی» تنظیمات و
+     * صفحه «به‌روزرسانی (Patch)»).
+     *
+     * به‌روزرسانی قالب فقط از همین راه انجام می‌شود: مدیر فایل zip بسته را انتخاب و
+     * بارگذاری می‌کند؛ قالب چیزی از سرور دیگری دریافت نمی‌کند.
+     *
+     * @param string $return صفحه بازگشت پس از بارگذاری: settings | updates
+     * @return void
+     */
+    private static function patch_upload_card(string $return): void
+    {
+        $max = (int) Settings::opt('updater.max_patch_size', 52428800);
+
+        // سقف واقعی = کوچک‌ترینِ «حداکثر حجم بسته» قالب و سقف بارگذاری PHP/وردپرس.
+        $server = (int) \wp_max_upload_size();
+        $limit  = $server > 0 ? min($max, $server) : $max;
+
+        echo '<div class="beryon-card beryon-card--patch">';
+        echo '<h2 class="beryon-card-title">' . esc_html__('نصب بسته به‌روزرسانی از فایل zip', BERYON_TD) . '</h2>';
+        echo '<p class="beryon-intro">' . \wp_kses_post(
+            \__('فایل <code>zip</code> بسته به‌روزرسانی (Patch) را از رایانه خود انتخاب و نصب کنید؛ قالب هیچ فایلی را از سرور دیگری دریافت نمی‌کند. بسته در ریشه خود <code>patch.json</code> و پوشه <code>files/</code> دارد. پیش از اعمال، از فایل‌هایی که عوض می‌شوند پشتیبان ساخته می‌شود و اگر خطایی رخ دهد همان پشتیبان خودکار برگردانده می‌شود.', BERYON_TD)
+        ) . '</p>';
+
+        if (! class_exists('\\ZipArchive')) {
+            echo '<div class="notice notice-error inline"><p>' . esc_html__('افزونه Zip در PHP این میزبان فعال نیست؛ بدون آن بسته zip باز نمی‌شود.', BERYON_TD) . '</p></div>';
+        }
+
+        echo '<form method="post" enctype="multipart/form-data" data-beryon-patch-form action="' . esc_url(\wp_nonce_url(\admin_url('admin-post.php?action=beryon_upload_patch'), 'beryon_upload_patch')) . '">';
+        echo '<input type="hidden" name="beryon_return" value="' . esc_attr($return === 'settings' ? 'settings' : 'updates') . '">';
+        echo '<input type="hidden" name="MAX_FILE_SIZE" value="' . esc_attr((string) $limit) . '">';
+        echo '<table class="form-table"><tbody>';
+        echo '<tr><th scope="row"><label for="beryon-patch-file">' . esc_html__('فایل zip بسته', BERYON_TD) . '</label></th><td>'
+            . '<input type="file" name="patch" id="beryon-patch-file" accept=".zip,application/zip,application/x-zip-compressed" class="regular-text" required>'
+            . '<p class="description">' . esc_html(\sprintf(__('حداکثر اندازه: %s', BERYON_TD), size_format($limit))) . '</p></td></tr>';
+        echo '<tr><th scope="row">' . esc_html__('حالت آزمایشی', BERYON_TD) . '</th><td><label><input type="checkbox" name="dry_run" value="1"> '
+            . esc_html__('فقط اعتبارسنجی و نمایش برنامه تغییرات (هیچ فایلی نوشته نمی‌شود)', BERYON_TD) . '</label></td></tr>';
+        echo '</tbody></table>';
+        \submit_button(\__('بررسی و نصب بسته', BERYON_TD), 'primary', 'beryon_apply', true);
+        echo '</form>';
+        echo '</div>';
+    }
+
+    /**
+     * پیام نتیجه آخرین بارگذاری بسته (یک بار نمایش داده می‌شود).
+     *
+     * @return void
+     */
+    private static function patch_flash(): void
+    {
+        $key   = 'beryon_patch_flash_' . \get_current_user_id();
+        $flash = \get_transient($key);
+
+        if (! is_array($flash)) {
+            return;
+        }
+
+        \delete_transient($key);
+
+        $type = (string) ($flash['type'] ?? 'success');
+
+        echo '<div class="notice notice-' . esc_attr($type) . ' inline is-dismissible beryon-patch-flash"><p><strong>' . esc_html((string) ($flash['title'] ?? '')) . '</strong><br>' . \wp_kses_post((string) ($flash['message'] ?? '')) . '</p>';
+
+        if (! empty($flash['plan']) && is_array($flash['plan'])) {
+            echo '<ul class="beryon-plan">';
+
+            foreach ($flash['plan'] as $row) {
+                echo '<li><code>' . esc_html((string) ($row['op'] ?? '')) . '</code> ' . esc_html((string) ($row['path'] ?? '')) . '</li>';
+            }
+
+            echo '</ul>';
+        }
+
+        echo '</div>';
+    }
+
+    /**
      * رندر صفحه ابزارها.
      *
      * @return void
@@ -892,7 +969,56 @@ wp beryon integrity</pre>';
         echo '</div>';
 
         echo '</div>';
+
+        self::agents_card();
+
         self::footer();
+        echo '</div>';
+    }
+
+    /**
+     * کارت «افزونه نمایندگان فروش بریان» در صفحه ابزارها: وضعیت افزونه، برگه هر
+     * شورت‌کد و دکمه ساخت برگه‌هایی که هنوز وجود ندارند.
+     *
+     * @return void
+     */
+    private static function agents_card(): void
+    {
+        $version = \App\Agents::plugin_version();
+        $labels  = [
+            'application' => \__('فرم درخواست نمایندگی', BERYON_TD),
+            'agent'       => \__('پنل نماینده فروش', BERYON_TD),
+            'admin'       => \__('پنل مدیریت نمایندگان', BERYON_TD),
+        ];
+
+        echo '<div class="beryon-card">';
+        echo '<h2 class="beryon-card-title">' . esc_html__('افزونه «سیستم نمایندگان فروش بریان»', BERYON_TD) . '</h2>';
+        echo '<p class="beryon-intro">' . esc_html__('قالب برای هر شورت‌کد این افزونه یک نمای آماده دارد. برگه‌ای که شورت‌کد را در متنش دارد خودکار با همان نما باز می‌شود و دکمه‌های «درخواست نمایندگی» سایت به برگه فرم می‌روند.', BERYON_TD) . '</p>';
+        echo '<table class="widefat striped beryon-table"><tbody>';
+        echo '<tr><th>' . esc_html__('فرم درخواست نمایندگی افزونه', BERYON_TD) . '</th><td>'
+            . (\App\Agents::active()
+                ? '<span class="beryon-badge ok">' . esc_html__('فعال', BERYON_TD) . '</span>' . ($version !== '' ? ' <code>' . esc_html($version) . '</code>' : '')
+                : '<span class="beryon-badge off">' . esc_html__('افزونه فعال نیست؛ فرم خودِ قالب نمایش داده می‌شود', BERYON_TD) . '</span>')
+            . '</td><td></td></tr>';
+        echo '<tr><th>' . esc_html__('پنل‌های افزونه', BERYON_TD) . '</th><td>'
+            . (\App\Agents::panels_active()
+                ? '<span class="beryon-badge ok">' . esc_html__('فعال', BERYON_TD) . '</span>'
+                : '<span class="beryon-badge off">' . esc_html__('در دسترس نیست (افزونه یا ووکامرس فعال نیست)', BERYON_TD) . '</span>')
+            . '</td><td></td></tr>';
+
+        foreach (\App\Agents::roles() as $role => $conf) {
+            $id  = \App\Agents::page_id((string) $role);
+            $url = $id > 0 ? (string) \get_permalink($id) : '';
+
+            echo '<tr><th>' . esc_html($labels[$role] ?? (string) $role) . '</th><td><code dir="ltr">[' . esc_html((string) $conf['tag']) . ']</code></td><td>'
+                . ($url !== ''
+                    ? '<a href="' . esc_url($url) . '" target="_blank" rel="noopener">' . esc_html(\get_the_title($id)) . '</a> <span class="beryon-muted" dir="ltr">' . esc_html(\urldecode((string) \wp_parse_url($url, PHP_URL_PATH))) . '</span>'
+                    : '<span class="beryon-badge off">' . esc_html__('برگه‌ای ساخته نشده', BERYON_TD) . '</span>')
+                . '</td></tr>';
+        }
+
+        echo '</tbody></table>';
+        echo '<p class="beryon-actions">' . self::action_button('beryon_agents_pages', \__('ساخت برگه‌های افزونه (فقط آن‌هایی که وجود ندارند)', BERYON_TD), 'secondary') . '</p>';
         echo '</div>';
     }
 
@@ -910,7 +1036,7 @@ wp beryon integrity</pre>';
         $readme = Updater::docs();
 
         echo '<div class="wrap beryon-wrap" dir="rtl">';
-        self::header(\__('راهنمای قالب بریون', BERYON_TD), BERYON_VERSION);
+        self::header(\__('راهنمای قالب بریون', BERYON_TD), BERYON_THEME_VERSION);
 
         echo '<div class="beryon-card">';
         echo '<h2 class="beryon-card-title">' . esc_html__('نصب و راه‌اندازی', BERYON_TD) . '</h2>';
@@ -970,7 +1096,7 @@ wp beryon integrity</pre>';
     private static function footer(): void
     {
         echo '<p class="beryon-footer-note">' . esc_html(
-            \sprintf(__('قالب بریون %s — ساخته‌شده برای شرکت بریان گوشت آمل. همه متن‌ها از طریق همین پنل قابل ویرایش‌اند.', BERYON_TD), BERYON_VERSION)
+            \sprintf(__('قالب بریون %s — ساخته‌شده برای شرکت بریان گوشت آمل. همه متن‌ها از طریق همین پنل قابل ویرایش‌اند.', BERYON_TD), BERYON_THEME_VERSION)
         ) . '</p>';
     }
 
@@ -1054,9 +1180,13 @@ wp beryon integrity</pre>';
                 echo '<textarea id="' . esc_attr($input_id) . '" name="' . esc_attr($input_name) . '" rows="' . (int) ($field['rows'] ?? 4) . '" class="large-text code" dir="' . esc_attr((string) ($field['dir'] ?? 'rtl')) . '">' . esc_textarea((string) $value) . '</textarea>';
                 break;
 
+            case 'embed':
+                echo '<textarea id="' . esc_attr($input_id) . '" name="' . esc_attr($input_name) . '" rows="3" class="large-text code" dir="ltr" placeholder="&lt;iframe src=&quot;https://…&quot;&gt;&lt;/iframe&gt;">' . esc_textarea((string) $value) . '</textarea>';
+                break;
+
             case 'html':
                 echo '<textarea id="' . esc_attr($input_id) . '" name="' . esc_attr($input_name) . '" rows="' . (int) ($field['rows'] ?? 6) . '" class="large-text code" dir="rtl">' . esc_textarea((string) $value) . '</textarea>';
-                echo '<p class="description">' . esc_html__('اجازه HTML محدود (b، i، a، br، span، strong). توکن‌ها: {count} {year} {brand} {company}', BERYON_TD) . '</p>';
+                echo '<p class="description">' . esc_html__('اجازه HTML محدود (b، i، a، br، span، strong). توکن‌ها: {count} {year} {gyear} {brand} {company}', BERYON_TD) . '</p>';
                 break;
 
             case 'tags':
@@ -1112,7 +1242,7 @@ wp beryon integrity</pre>';
 
             case 'image':
             case 'media':
-                self::media_field($input_id, $input_name, (int) $value, (string) ($field['label'] ?? ''), (string) ($field['fallback'] ?? ''));
+                self::media_field($input_id, $input_name, (int) $value, (string) ($field['label'] ?? ''), (string) ($field['fallback'] ?? ''), (string) ($field['mime'] ?? 'image'));
                 break;
 
             case 'repeater':
@@ -1130,7 +1260,7 @@ wp beryon integrity</pre>';
                 break;
         }
 
-        if ($help !== '' && ! in_array($type, ['html', 'tags', 'lines', 'list'], true)) {
+        if ($help !== '' && ! in_array($type, ['tags', 'lines', 'list'], true)) {
             echo '<p class="description">' . \wp_kses_post($help) . '</p>';
         }
 
@@ -1138,24 +1268,34 @@ wp beryon integrity</pre>';
     }
 
     /**
-     * فیلد انتخاب تصویر از کتابخانه رسانه.
+     * فیلد انتخاب تصویر یا فایل از کتابخانه رسانه.
      *
      * @param string $id       شناسه
      * @param string $name     نام فیلد
      * @param int    $value    شناسه پیوست
      * @param string $label    برچسب
      * @param string $fallback نام فایل پیش‌فرض قالب
+     * @param string $mime     نوع فایل قابل انتخاب: image (پیش‌فرض) یا مثلاً application/pdf
      * @return void
      */
-    private static function media_field(string $id, string $name, int $value, string $label, string $fallback): void
+    private static function media_field(string $id, string $name, int $value, string $label, string $fallback, string $mime = 'image'): void
     {
-        $url = $value > 0 ? (string) \wp_get_attachment_url($value) : ($fallback !== '' ? \beryon_img($fallback) : '');
+        $is_image = $mime === 'image' || $mime === '';
+        $url      = $value > 0 ? (string) \wp_get_attachment_url($value) : ($fallback !== '' ? \beryon_img($fallback) : '');
 
-        echo '<div class="beryon-media" data-media>';
+        if ($url === '') {
+            $preview = '<span>' . ($is_image ? esc_html__('بدون تصویر', BERYON_TD) : esc_html__('فایلی انتخاب نشده', BERYON_TD)) . '</span>';
+        } elseif ($is_image) {
+            $preview = '<img src="' . esc_url($url) . '" alt="" loading="lazy" decoding="async">';
+        } else {
+            $preview = '<a href="' . esc_url($url) . '" target="_blank" rel="noopener" dir="ltr">' . esc_html(\wp_basename($url)) . '</a>';
+        }
+
+        echo '<div class="beryon-media' . ($is_image ? '' : ' beryon-media--file') . '" data-media data-media-type="' . esc_attr($is_image ? 'image' : $mime) . '">';
         echo '<input type="hidden" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" value="' . esc_attr((string) $value) . '">';
-        echo '<div class="beryon-media-preview">' . ($url !== '' ? '<img src="' . esc_url($url) . '" alt="" loading="lazy" decoding="async">' : '<span>' . esc_html__('بدون تصویر', BERYON_TD) . '</span>') . '</div>';
+        echo '<div class="beryon-media-preview" data-media-preview>' . $preview . '</div>';
         echo '<div class="beryon-media-actions">';
-        echo '<button type="button" class="button" data-media-select>' . esc_html__('انتخاب تصویر', BERYON_TD) . '</button> ';
+        echo '<button type="button" class="button" data-media-select>' . ($is_image ? esc_html__('انتخاب تصویر', BERYON_TD) : esc_html__('انتخاب فایل', BERYON_TD)) . '</button> ';
         echo '<button type="button" class="button-link" data-media-clear>' . esc_html__('حذف', BERYON_TD) . '</button>';
         echo '</div></div>';
 
@@ -1323,7 +1463,7 @@ wp beryon integrity</pre>';
     }
 
     /**
-     * آپلود و اعمال پچ از فرم.
+     * بارگذاری فایل zip بسته به‌روزرسانی و اعمال آن (فرم «نصب بسته به‌روزرسانی»).
      *
      * @return void
      */
@@ -1332,22 +1472,53 @@ wp beryon integrity</pre>';
         self::guard('beryon_upload_patch');
 
         $flash_key = 'beryon_patch_flash_' . \get_current_user_id();
+        $return    = isset($_POST['beryon_return']) && \sanitize_key(\wp_unslash($_POST['beryon_return'])) === 'settings' ? 'settings' : 'updates';
+        $upload    = isset($_FILES['patch']) && is_array($_FILES['patch']) ? $_FILES['patch'] : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+        $error     = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+        $tmp       = (string) ($upload['tmp_name'] ?? '');
+        $name      = (string) \sanitize_file_name((string) ($upload['name'] ?? ''));
+        $problem   = '';
 
-        if (empty($_FILES['patch']['tmp_name'])) {
+        if ($error === UPLOAD_ERR_NO_FILE || ($error === UPLOAD_ERR_OK && $tmp === '')) {
+            $problem = \__('فایلی انتخاب نشد. فایل zip بسته به‌روزرسانی را انتخاب کنید.', BERYON_TD);
+        } elseif ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+            $problem = \sprintf(
+                /* translators: %s: size limit */
+                \__('حجم فایل از سقف بارگذاری این میزبان (%s) بیشتر است.', BERYON_TD),
+                \size_format((int) \wp_max_upload_size())
+            );
+        } elseif ($error !== UPLOAD_ERR_OK) {
+            $problem = \sprintf(
+                /* translators: %d: PHP upload error code */
+                \__('بارگذاری فایل کامل نشد (کد خطای PHP: %d). دوباره تلاش کنید.', BERYON_TD),
+                $error
+            );
+        } elseif (strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) !== 'zip') {
+            $problem = \__('فایل انتخاب‌شده zip نیست. بسته به‌روزرسانی قالب یک فایل zip است.', BERYON_TD);
+        } elseif ((int) ($upload['size'] ?? 0) > (int) Settings::opt('updater.max_patch_size', 52428800)) {
+            $problem = \sprintf(
+                /* translators: %s: size limit */
+                \__('حجم فایل از «حداکثر حجم بسته» (%s) بیشتر است.', BERYON_TD),
+                \size_format((int) Settings::opt('updater.max_patch_size', 52428800))
+            );
+        }
+
+        if ($problem !== '') {
             \set_transient($flash_key, [
                 'type'    => 'error',
-                'title'   => \__('فایلی انتخاب نشد', BERYON_TD),
-                'message' => \__('یک بسته zip حاوی patch.json انتخاب کنید.', BERYON_TD),
-            ], 60);
+                'title'   => \__('بسته نصب نشد', BERYON_TD),
+                'message' => esc_html($problem),
+            ], 120);
 
-            self::redirect_back('', 'beryon-updates');
+            self::redirect_patch($return);
         }
 
         $dry_run = isset($_POST['dry_run']);
         $result  = PatchApplier::apply(
-            (string) $_FILES['patch']['tmp_name'], // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+            $tmp,
             [
                 'dry_run' => $dry_run,
+                'source'  => 'upload',
                 'user'    => \wp_get_current_user()->display_name,
             ]
         );
@@ -1355,19 +1526,64 @@ wp beryon integrity</pre>';
         if (! empty($result['ok'])) {
             \set_transient($flash_key, [
                 'type'    => 'success',
-                'title'   => $dry_run ? \__('اعتبارسنجی موفق (حالت آزمایشی)', BERYON_TD) : \__('پچ با موفقیت اعمال شد', BERYON_TD),
-                'message' => esc_html((string) ($result['message'] ?? '')),
+                'title'   => $dry_run ? \__('اعتبارسنجی موفق (حالت آزمایشی)', BERYON_TD) : \__('بسته با موفقیت نصب شد', BERYON_TD),
+                'message' => esc_html(($name !== '' ? $name . ' — ' : '') . (string) ($result['message'] ?? '')),
                 'plan'    => (array) ($result['plan']['rows'] ?? []),
             ], 120);
         } else {
             \set_transient($flash_key, [
                 'type'    => 'error',
-                'title'   => \__('اعمال پچ ناموفق بود', BERYON_TD),
-                'message' => esc_html((string) ($result['message'] ?? '')) . ' <code>' . esc_html((string) ($result['code'] ?? '')) . '</code>',
+                'title'   => \__('نصب بسته ناموفق بود', BERYON_TD),
+                'message' => esc_html(($name !== '' ? $name . ' — ' : '') . (string) ($result['message'] ?? '')) . ' <code>' . esc_html((string) ($result['code'] ?? '')) . '</code>',
             ], 120);
         }
 
-        self::redirect_back('', 'beryon-updates');
+        self::redirect_patch($return);
+    }
+
+    /**
+     * بازگشت به صفحه‌ای که فرم بارگذاری بسته در آن بود.
+     *
+     * @param string $return settings | updates
+     * @return void
+     */
+    private static function redirect_patch(string $return): void
+    {
+        $url = $return === 'settings'
+            ? \add_query_arg(['page' => self::PAGE_SLUG, 'tab' => 'updater'], \admin_url('admin.php'))
+            : \admin_url('admin.php?page=beryon-updates');
+
+        \wp_safe_redirect($url);
+        exit;
+    }
+
+    /**
+     * ساخت برگه‌های افزونه نمایندگان (فرم درخواست، پنل نماینده، پنل مدیریت).
+     *
+     * @return void
+     */
+    public static function agents_pages(): void
+    {
+        self::guard('beryon_agents_pages');
+
+        $created = [];
+
+        foreach (\App\Agents::create_pages() as $page) {
+            if (! empty($page['created'])) {
+                $created[] = \get_the_title((int) $page['id']);
+            }
+        }
+
+        self::redirect_back(
+            $created !== []
+                ? \sprintf(
+                    /* translators: %s: page titles */
+                    \__('برگه‌های تازه ساخته شد: %s', BERYON_TD),
+                    implode('، ', $created)
+                )
+                : \__('همه برگه‌های افزونه نمایندگان از پیش وجود دارند؛ برگه تازه‌ای ساخته نشد.', BERYON_TD),
+            'beryon-tools'
+        );
     }
 
     /**

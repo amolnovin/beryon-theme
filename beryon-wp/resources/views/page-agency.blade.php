@@ -35,8 +35,19 @@
     </div>
   </section>
 
+@php
+  // فرم درخواست نمایندگیِ افزونه «سیستم نمایندگان فروش بریان» اگر در دسترس باشد
+  // (تنظیم agency.form_source)؛ وگرنه فرم خودِ قالب که پایین‌تر آمده است.
+  $agency_plugin_form = \App\Agents::form_html('agency');
+  $agent_panel_url    = \App\Agents::panels_active() ? \App\Agents::page_url('agent') : '';
+@endphp
   <section class="section" style="padding-top:20px">
     <div class="container">
+@if ($agency_plugin_form !== '')
+      <div class="plugin-form plugin-form--agency reveal">
+        {!! $agency_plugin_form !!}
+      </div>
+@else
       <div class="form-card reveal" style="max-width:920px;margin-inline:auto">
         <form data-form="agency" method="post" action="{{ esc_url(beryon_form_url()) }}" novalidate>
           <h2 style="font-size:1.25rem;margin-bottom:8px">{{ beryon_opt('agency.form_title') }}</h2>
@@ -111,6 +122,10 @@
           <span class="track"></span>
         </div>
       </div>
+@endif
+@if ($agent_panel_url !== '')
+      <p class="agents-login-note">نماینده بریون هستید؟ <a href="{{ esc_url($agent_panel_url) }}">ورود به پنل نمایندگان</a></p>
+@endif
     </div>
   </section>
 @endsection
