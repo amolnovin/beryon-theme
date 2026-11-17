@@ -659,6 +659,13 @@ final class SettingsPage
         echo '<tr><th>' . esc_html__('نسخه فعال', BERYON_TD) . '</th><td><code>' . esc_html(BERYON_VERSION) . '</code></td></tr>';
         echo '<tr><th>' . esc_html__('مسیر قالب', BERYON_TD) . '</th><td><code>' . esc_html(basename(BERYON_PATH)) . '</code></td></tr>';
         echo '<tr><th>' . esc_html__('PHP / وردپرس', BERYON_TD) . '</th><td><code>' . esc_html(PHP_VERSION . ' / ' . \get_bloginfo('version')) . '</code></td></tr>';
+
+        // وضعیت چندزبانه و دسته‌های اصلیِ همان زبانی که پیشخوان نشان می‌دهد — برای وارسی پس از نصب.
+        $main_names = array_map(static fn (array $item): string => (string) $item['name'], \App\Products::main_categories());
+        $main_lang  = \App\Lang::is_multilingual() ? ' (' . \App\Lang::current() . ')' : '';
+
+        echo '<tr><th>' . esc_html__('چندزبانه', BERYON_TD) . '</th><td>' . esc_html(\App\Lang::summary()) . '</td></tr>';
+        echo '<tr><th>' . esc_html(\__('دسته‌های اصلی', BERYON_TD) . $main_lang) . '</th><td>' . esc_html($main_names !== [] ? implode('، ', $main_names) : '—') . '</td></tr>';
         echo '<tr><th>' . esc_html__('زمان‌بندی بررسی خودکار', BERYON_TD) . '</th><td>' . (Updater::is_scheduled() ? '<span class="beryon-badge ok">فعال</span>' : '<span class="beryon-badge off">غیرفعال</span>') . '</td></tr>';
         echo '</tbody></table>';
 

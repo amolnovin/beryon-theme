@@ -323,6 +323,31 @@ final class Lang
         return (bool) \apply_filters('beryon/lang/is_rtl', $rtl, $current);
     }
 
+    /**
+     * خلاصه وضعیت چندزبانه برای پیشخوان (حالت تشخیص‌داده‌شده و زبان‌ها).
+     *
+     * @return string
+     */
+    public static function summary(): string
+    {
+        if (! self::is_multilingual()) {
+            return \__('تک‌زبانه (افزونه چندزبانه یا داده زبان پیدا نشد)', BERYON_TD);
+        }
+
+        $default = self::default_language();
+        $parts   = [];
+
+        foreach (array_keys(self::languages()) as $slug) {
+            $parts[] = (string) $slug . ((string) $slug === $default ? ' (' . \__('پیش‌فرض', BERYON_TD) . ')' : '');
+        }
+
+        $label = self::mode() === self::MODE_POLYLANG
+            ? \__('Polylang فعال', BERYON_TD)
+            : \__('Polylang خاموش؛ زبان‌ها از داده آن در پایگاه داده خوانده می‌شود', BERYON_TD);
+
+        return $label . ' — ' . implode('، ', $parts);
+    }
+
     /* ============================================================== *
      * زبان دسته‌ها و نوشته‌ها
      * ============================================================== */
