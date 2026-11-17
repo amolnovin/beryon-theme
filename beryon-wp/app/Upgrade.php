@@ -103,7 +103,7 @@ final class Upgrade
             }
         }
 
-        // ۲) کارت «تلفن کارخانه»: متن پیشین یک رقم کم داشت.
+        // ۲) کارت «تلفن کارخانه»: شماره متن پیشین ناقص بود (۴۴۴۸۰۷ به‌جای ۴۴۴۴۸۰۷۱).
         if (isset($stored['contact']['cards']) && is_array($stored['contact']['cards'])) {
             foreach ($stored['contact']['cards'] as $index => $card) {
                 if (is_array($card) && isset($card['text']) && trim((string) $card['text']) === '۰۱۱-۴۴۴۸۰۷ تا ۹ (پاسخگویی شنبه تا پنجشنبه)') {

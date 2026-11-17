@@ -609,29 +609,31 @@ function beryon_active_nav(): string
 }
 
 /**
- * نامک‌های جایگزین هر برگه قالب (کلید = بخش کلیدی نام قالب).
+ * مسیرهای شناخته‌شده هر برگه قالب (کلید = نام نما بدون «page-»).
  *
- * سایت‌هایی که از پیش محتوا دارند برگه‌ها را با نامک دیگری ساخته‌اند (مثلاً
+ * سایتی که از پیش محتوا دارد ممکن است برگه را در مسیر دیگری ساخته باشد (مثلاً
  * ‎/organizational-chart/‎ بدون والد «about-us»، یا «فرم-درخواست-نمایندگی»). همین
  * فهرست هم برای پیدا کردن نشانی برگه و هم برای انتخاب نمای آن به‌کار می‌رود.
+ * مقایسه با «مسیر کامل» برگه است، نه نامک تنها؛ پس برگه دیگری که فقط نامکش شبیه
+ * است (مثلاً برگه انگلیسی ‎/about/‎) نمای قالب را نمی‌گیرد.
  *
  * @return array<string,array<int,string>>
  */
 function beryon_page_slugs(): array
 {
     $slugs = [
-        'about'        => ['about-us', 'about'],
-        'ceo'          => ['about-us/introduction-of-ceo', 'introduction-of-ceo', 'about-us/ceo', 'ceo'],
-        'org-chart'    => ['about-us/organizational-chart', 'organizational-chart', 'about-us/org-chart', 'org-chart'],
-        'certificates' => ['about-us/certificates', 'certificates'],
-        'contact-us'   => ['contact-us', 'contact'],
+        'about'        => ['about-us'],
+        'ceo'          => ['about-us/introduction-of-ceo'],
+        'org-chart'    => ['about-us/organizational-chart', 'organizational-chart'],
+        'certificates' => ['about-us/certificates'],
+        'contact-us'   => ['contact-us'],
         'catalog'      => ['catalog'],
         'feedback'     => ['feedback'],
-        'agency'       => ['agency', 'فرم-درخواست-نمایندگی', 'درخواست-نمایندگی', 'agency-request'],
+        'agency'       => ['agency', 'فرم-درخواست-نمایندگی'],
     ];
 
     /**
-     * فیلتر نامک‌های جایگزین برگه‌های قالب.
+     * فیلتر مسیرهای شناخته‌شده برگه‌های قالب.
      *
      * @param array<string,array<int,string>> $slugs کلید نما (page-<کلید>) → مسیرها
      */
@@ -642,7 +644,7 @@ function beryon_page_slugs(): array
  * لینک یک صفحه قالب بر اساس نام قالب (Template Name) یا اسلاگ.
  *
  * ترتیب: برگه «درخواست نمایندگی» افزونه نمایندگان (برای agency) ← مسیر داده‌شده ←
- * برگه‌ای که قالب برگه را دارد ← نامک‌های جایگزین (beryon_page_slugs) ← صفحه اصلی.
+ * برگه‌ای که قالب برگه را دارد ← مسیرهای شناخته‌شده (beryon_page_slugs) ← صفحه اصلی.
  * نتیجه در طول همان درخواست نگه داشته می‌شود (سربرگ، منو و پابرگ بارها صدا می‌زنند).
  *
  * @param string $slug     اسلاگ صفحه، مثال: about-us

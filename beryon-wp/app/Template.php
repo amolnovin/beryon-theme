@@ -320,12 +320,13 @@ final class Template
                 if ($slug !== '') {
                     $candidates[] = 'page-' . $slug;
 
-                    // نامک‌های جایگزین: برگه‌ای که نامکش با نام نما یکی نیست (مثل
+                    // مسیرهای شناخته‌شده: برگه‌ای که نامکش با نام نما یکی نیست (مثل
                     // ‎/organizational-chart/‎ برای page-org-chart) هم نمای خودش را می‌گیرد.
-                    $path = trim((string) \get_page_uri((int) \get_the_ID()), '/');
+                    // مقایسه با مسیر کامل برگه است تا برگه‌های دیگرِ هم‌نامک دست نخورند.
+                    $path = rawurldecode(trim((string) \get_page_uri((int) \get_the_ID()), '/'));
 
-                    foreach (\beryon_page_slugs() as $view => $aliases) {
-                        if (in_array($slug, (array) $aliases, true) || in_array($path, (array) $aliases, true)) {
+                    foreach (\beryon_page_slugs() as $view => $paths) {
+                        if (in_array($path, (array) $paths, true)) {
                             $candidates[] = 'page-' . $view;
 
                             break;

@@ -145,8 +145,9 @@ body.bmodal-lock{overflow:hidden}
    روی همان مارک‌آپ ‎.org-tree / .org-node‎ قالب HTML می‌نشیند (کلاس org-chart)؛
    ریشه تیره، خانه‌های سفید با حاشیه نازک، و خط افقی‌ای که از مرکز نخستین تا مرکز
    آخرین فرزند کشیده می‌شود. سه اندازه: عادی (≥۱۲۸۰)، فشرده (۱۱۰۰ تا ۱۲۷۹) و درخت
-   عمودی (≤۱۰۹۹). اگر درخت باز هم از پهنای صفحه بیشتر شد، خودِ چارت افقی پیمایش می‌شود. */
-.org-tree.org-chart{--org-line:#cdd4dc;--org-gap:22px;--org-pad:2px;padding:8px 0 22px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+   عمودی (≤۱۰۹۹). اگر درخت باز هم از پهنای صفحه بیشتر شد، خودِ چارت افقی پیمایش می‌شود.
+   چیدمان همیشه راست‌به‌چپ است (متن واحدها فارسی است)، حتی در برگه چپ‌به‌راست. */
+.org-tree.org-chart{--org-line:#cdd4dc;--org-gap:22px;--org-pad:2px;direction:rtl;padding:8px 0 22px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .org-chart ul{display:flex;flex-wrap:nowrap;justify-content:center;gap:0;position:relative;margin:0;padding:var(--org-gap) 0 0;list-style:none}
 .org-chart>ul{width:max-content;min-width:100%;padding-top:0}
 .org-chart li{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;position:relative;padding:var(--org-gap) var(--org-pad) 0}
